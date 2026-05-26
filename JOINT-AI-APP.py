@@ -140,7 +140,7 @@ if 'model_tq' not in st.session_state:
         'opt_result_x': None, 'opt_pred_tq': None, 'opt_pred_ed': None, 'confidence_score': None
     })
 
-# 5. 사이드바 - JOINT-INPUT 단일 데이터 패널 관리
+# 5. 사이드바 - JOINT-INPUT 데이터 패널 관리
 with st.sidebar:
     st.markdown("<h3 style='color: #10b981; font-family: JetBrains Mono;'>DATA MANAGEMENT</h3>", unsafe_allow_html=True)
     with st.expander("공정 데이터 자산 로드", expanded=True):
@@ -155,14 +155,12 @@ with st.sidebar:
             df_comb = df_master.dropna(subset=['Torque', 'Endurance'])
             X_list = st.session_state['process_vars']
             
-            # 독립변수 스케일링 및 선형 분석 모델 학습
             scaler = MinMaxScaler().fit(df_comb[X_list])
             X_scaled = scaler.transform(df_comb[X_list])
             
             model_tq = LinearRegression().fit(X_scaled, df_comb['Torque'])
             model_ed = LinearRegression().fit(X_scaled, df_comb['Endurance'])
             
-            # 입력 데이터 실측 구간 기준 경계 조건 가변화
             st.session_state.update({
                 'model_tq': model_tq, 'model_ed': model_ed, 'scaler': scaler, 'df_caulking': df_comb,
                 'optimizer_status': "Engine Ready",
@@ -189,26 +187,11 @@ if st.session_state['model_tq']:
     tab1, tab2 = st.tabs(["품질 타겟 추적 솔루션", "코킹 공정 원천 로그"])
 
     with tab1:
+        # [구조 변경] 좌측과 우측의 데이터 컴포넌트 위치를 맞바꾸었습니다.
         col1, col2 = st.columns([1, 1], gap="large")
         
         with col1:
-            st.markdown("<h4 style='color:#e5e7eb; margin-bottom:15px;'>요구 품질 목표 범위 지정 (Target Quality)</h4>", unsafe_allow_html=True)
-            
-            # 토크 타겟 제어 범위 셋팅
-            st.session_state['target_tq_range'] = st.slider(
-                "목표 토크 범위 지정 (Torque, Nm)",
-                min_value=20.0, max_value=50.0,
-                value=st.session_state['target_tq_range'], step=0.1
-            )
-            
-            # 내구성 타겟 제어 범위 셋팅
-            st.session_state['target_ed_range'] = st.slider(
-                "목표 내구 수명 범위 지정 (Endurance, Cycles)",
-                min_value=50000, max_value=200000,
-                value=(int(st.session_state['target_ed_range'][0]), int(st.session_state['target_ed_range'][1])), step=1000
-            )
-
-        with col2:
+            # 기존 우측에 있던 '공정 탐색 알고리즘 경계 조건'을 좌측으로 배치
             st.markdown("<h4 style='color:#e5e7eb; margin-bottom:15px;'>공정 탐색 알고리즘 경계 조건</h4>", unsafe_allow_html=True)
             st.info("AI 엔진이 설비 고장을 방지하기 위해 데이터 분석 기반 안전 한계선 내에서 공정 변수(CD, SC)의 최적 조합을 탐색합니다.")
             
@@ -217,6 +200,24 @@ if st.session_state['model_tq']:
             * **코킹 거리(CD) 탐색 영역:** {cb['Caulking_Distance'][0]:.2f} mm ~ {cb['Caulking_Distance'][1]:.2f} mm
             * **스터드 센터(SC) 탐색 영역:** {cb['Stud_Center'][0]:.2f} mm ~ {cb['Stud_Center'][1]:.2f} mm
             """)
+
+        with col2:
+            # 기존 좌측에 있던 '요구 품질 목표 범위 지정'을 우측으로 배치
+            st.markdown("<h4 style='color:#e5e7eb; margin-bottom:15px;'>요구 품질 목표 범위 지정 (Target Quality)</h4>", unsafe_allow_html=True)
+            
+            # 토크 타겟 제어 범위 셋팅 슬라이더
+            st.session_state['target_tq_range'] = st.slider(
+                "목표 토크 범위 지정 (Torque, Nm)",
+                min_value=20.0, max_value=50.0,
+                value=st.session_state['target_tq_range'], step=0.1
+            )
+            
+            # 내구성 타겟 제어 범위 셋팅 슬라이더
+            st.session_state['target_ed_range'] = st.slider(
+                "목표 내구 수명 범위 지정 (Endurance, Cycles)",
+                min_value=50000, max_value=200000,
+                value=(int(st.session_state['target_ed_range'][0]), int(st.session_state['target_ed_range'][1])), step=1000
+            )
 
         st.markdown("<br><hr style='border: 0.5px solid #1f2937;'><br>", unsafe_allow_html=True)
         
@@ -273,23 +274,20 @@ if st.session_state['model_tq']:
                 st.session_state['opt_pred_tq'] = pred_tq
                 st.session_state['opt_pred_ed'] = pred_ed
                 
-                # --- [신뢰도 계산 매커니즘 알고리즘] ---
+                # 신뢰도 계산 매커니즘 알고리즘
                 tq_min, tq_max = st.session_state['target_tq_range']
                 ed_min, ed_max = st.session_state['target_ed_range']
                 
-                # 토크 일치율 정량화 (중앙 타겟 기준 편차 평가)
                 tq_mid = (tq_min + tq_max) / 2.0
                 tq_half_range = (tq_max - tq_min) / 2.0 if (tq_max - tq_min) > 0 else 1.0
                 tq_dev = abs(pred_tq - tq_mid) / tq_half_range
                 tq_conf = max(0.0, 100.0 - (tq_dev * 50.0)) if tq_min <= pred_tq <= tq_max else max(0.0, 50.0 - (min(abs(pred_tq-tq_min), abs(pred_tq-tq_max)) * 50.0))
                 
-                # 내구 수명 일치율 정량화
                 ed_mid = (ed_min + ed_max) / 2.0
                 ed_half_range = (ed_max - ed_min) / 2.0 if (ed_max - ed_min) > 0 else 1.0
                 ed_dev = abs(pred_ed - ed_mid) / ed_half_range
                 ed_conf = max(0.0, 100.0 - (ed_dev * 50.0)) if ed_min <= pred_ed <= ed_max else max(0.0, 50.0 - (min(abs(pred_ed-ed_min), abs(pred_ed-ed_max)) / 1000.0 * 50.0))
                 
-                # 종합 예측 신뢰 지수 산출 (토크와 내구성의 조화 평균적 가중)
                 st.session_state['confidence_score'] = round((tq_conf + ed_conf) / 2.0, 1)
                 st.session_state['optimizer_status'] = "Optimization Success" if st.session_state['confidence_score'] >= 80.0 else "Approximated"
             
@@ -324,7 +322,6 @@ if st.session_state['model_tq']:
                     </div>
                 """, unsafe_allow_html=True)
             with r_col3:
-                # 조건 부합 수준 신뢰도를 % 표기 적용
                 conf_color = "#10b981" if st.session_state['confidence_score'] >= 80.0 else "#ef4444"
                 st.markdown(f"""
                     <div style='border-radius: 6px; border-left: 6px solid {conf_color}; padding: 20px; background: #1f2937;'>
