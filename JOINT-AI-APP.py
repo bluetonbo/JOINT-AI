@@ -509,7 +509,7 @@ if st.session_state['model_tq']:
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
             else:
-                st.markdown("<div style='text-align:center; padding:100px 0; color:#475569; font-size:0.9rem;'>변수를 입력한 후 시뮬레이션 실행 버튼을 클릭하면 결과 카드가 정렬됩니다.</div>", unsafe_allow_html=True)
+                st.markdown("<div style='text-align:center; padding:100px 0; color:#475569; font-size:0.9rem;'>Enter the variables and click the execute button to display the simulation results.</div>", unsafe_allow_html=True)
 
     # ------------------ TAB 3: 공정 로그 데이터레이크 ------------------
     with tab3:
