@@ -187,11 +187,9 @@ if st.session_state['model_tq']:
     tab1, tab2 = st.tabs(["품질 타겟 추적 솔루션", "코킹 공정 원천 로그"])
 
     with tab1:
-        # [구조 변경] 좌측과 우측의 데이터 컴포넌트 위치를 맞바꾸었습니다.
         col1, col2 = st.columns([1, 1], gap="large")
         
         with col1:
-            # 기존 우측에 있던 '공정 탐색 알고리즘 경계 조건'을 좌측으로 배치
             st.markdown("<h4 style='color:#e5e7eb; margin-bottom:15px;'>공정 탐색 알고리즘 경계 조건</h4>", unsafe_allow_html=True)
             st.info("AI 엔진이 설비 고장을 방지하기 위해 데이터 분석 기반 안전 한계선 내에서 공정 변수(CD, SC)의 최적 조합을 탐색합니다.")
             
@@ -202,17 +200,14 @@ if st.session_state['model_tq']:
             """)
 
         with col2:
-            # 기존 좌측에 있던 '요구 품질 목표 범위 지정'을 우측으로 배치
             st.markdown("<h4 style='color:#e5e7eb; margin-bottom:15px;'>요구 품질 목표 범위 지정 (Target Quality)</h4>", unsafe_allow_html=True)
             
-            # 토크 타겟 제어 범위 셋팅 슬라이더
             st.session_state['target_tq_range'] = st.slider(
                 "목표 토크 범위 지정 (Torque, Nm)",
                 min_value=20.0, max_value=50.0,
                 value=st.session_state['target_tq_range'], step=0.1
             )
             
-            # 내구성 타겟 제어 범위 셋팅 슬라이더
             st.session_state['target_ed_range'] = st.slider(
                 "목표 내구 수명 범위 지정 (Endurance, Cycles)",
                 min_value=50000, max_value=200000,
@@ -274,7 +269,6 @@ if st.session_state['model_tq']:
                 st.session_state['opt_pred_tq'] = pred_tq
                 st.session_state['opt_pred_ed'] = pred_ed
                 
-                # 신뢰도 계산 매커니즘 알고리즘
                 tq_min, tq_max = st.session_state['target_tq_range']
                 ed_min, ed_max = st.session_state['target_ed_range']
                 
@@ -295,23 +289,42 @@ if st.session_state['model_tq']:
 
         # 결과 리포트 대시보드 출력부
         if st.session_state['opt_result_x'] is not None:
-            st.markdown("<h3 style='color:#ffffff; margin-top: 25px;'>AI 분석 기반 역산 도출 결과</h3>", unsafe_allow_html=True)
-            
             opt_x = st.session_state['opt_result_x']
-            df_recommend = pd.DataFrame([{
-                '추천 코킹 거리 (Caulking_Distance)': f"{opt_x[0]:.2f} mm",
-                '추천 스터드 센터 (Stud_Center)': f"{opt_x[1]:.2f} mm",
-                '추천 에이징 여부 (Aging_Status)': "Aged (에이징 적용)" if round(opt_x[2]) == 1 else "Unaged (미적용)"
-            }])
-            st.dataframe(df_recommend, use_container_width=True)
+            aging_text = "Aged (에이징 적용)" if round(opt_x[2]) == 1 else "Unaged (미적용)"
             
-            # 품질 변수 만족 스펙 카드 및 신뢰도 통합 모니터링 레이아웃 (3열 배치)
+            # 상단 영역: [수정] 표 형태를 제거하고 예상 토크값과 동일한 3열 카드 모양으로 교체
+            st.markdown("<h3 style='color:#ffffff; margin-top: 25px;'>AI 분석 기반 권장 공정 사양</h3>", unsafe_allow_html=True)
+            c_col1, c_col2, c_col3 = st.columns(3)
+            with c_col1:
+                st.markdown(f"""
+                    <div style='border-radius: 6px; border-left: 6px solid #10b981; padding: 20px; background: #1f2937;'>
+                        <span style='color: #9ca3af; font-size: 0.9rem; font-weight:600;'>추천 코킹 거리 (Caulking_Distance)</span>
+                        <h2 style='color: #ffffff; font-size: 2.5rem; margin: 5px 0; font-family: JetBrains Mono;'>{opt_x[0]:.2f} <span style='font-size:1.2rem; color:#10b981;'>mm</span></h2>
+                    </div>
+                """, unsafe_allow_html=True)
+            with c_col2:
+                st.markdown(f"""
+                    <div style='border-radius: 6px; border-left: 6px solid #10b981; padding: 20px; background: #1f2937;'>
+                        <span style='color: #9ca3af; font-size: 0.9rem; font-weight:600;'>추천 스터드 센터 (Stud_Center)</span>
+                        <h2 style='color: #ffffff; font-size: 2.5rem; margin: 5px 0; font-family: JetBrains Mono;'>{opt_x[1]:.2f} <span style='font-size:1.2rem; color:#10b981;'>mm</span></h2>
+                    </div>
+                """, unsafe_allow_html=True)
+            with c_col3:
+                st.markdown(f"""
+                    <div style='border-radius: 6px; border-left: 6px solid #10b981; padding: 20px; background: #1f2937;'>
+                        <span style='color: #9ca3af; font-size: 0.9rem; font-weight:600;'>추천 에이징 여부 (Aging_Status)</span>
+                        <h2 style='color: #ffffff; font-size: 1.8rem; margin: 12px 0; font-family: Inter; font-weight:700;'>{aging_text}</h2>
+                    </div>
+                """, unsafe_allow_html=True)
+            
+            # 하단 영역: 품질 변수 만족 스펙 및 신뢰도 모니터링 카드 (3열 배치)
+            st.markdown("<h3 style='color:#ffffff; margin-top: 25px;'>해당 조건 세팅 시 예상 품질 인자 및 신뢰도</h3>", unsafe_allow_html=True)
             r_col1, r_col2, r_col3 = st.columns(3)
             with r_col1:
                 st.markdown(f"""
-                    <div style='border-radius: 6px; border-left: 6px solid #10b981; padding: 20px; background: #1f2937;'>
+                    <div style='border-radius: 6px; border-left: 6px solid #3b82f6; padding: 20px; background: #1f2937;'>
                         <span style='color: #9ca3af; font-size: 0.9rem; font-weight:600;'>해당 조건 세팅 시 예상 토크 값</span>
-                        <h2 style='color: #ffffff; font-size: 2.5rem; margin: 5px 0; font-family: JetBrains Mono;'>{st.session_state['opt_pred_tq']:.2f} <span style='font-size:1.2rem; color:#10b981;'>Nm</span></h2>
+                        <h2 style='color: #ffffff; font-size: 2.5rem; margin: 5px 0; font-family: JetBrains Mono;'>{st.session_state['opt_pred_tq']:.2f} <span style='font-size:1.2rem; color:#3b82f6;'>Nm</span></h2>
                     </div>
                 """, unsafe_allow_html=True)
             with r_col2:
