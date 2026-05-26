@@ -74,7 +74,8 @@ st.markdown("""
         background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%) !important;
     }
 
-    .stSlider label {
+    /* 숫자 입력창 라벨 스타일 정의 */
+    .stNumberInput label {
         color: #94a3b8 !important;
         font-weight: 500 !important;
         font-size: 0.85rem !important;
@@ -230,21 +231,18 @@ if st.session_state['model_tq']:
                     'Stud_Center': db['Stud_Center']
                 }
             else:
-                manual_cd = st.slider(
-                    "Manual Caulking Distance Boundary (mm)",
-                    min_value=0.0, max_value=15.0,
-                    value=(float(round(db['Caulking_Distance'][0], 2)), float(round(db['Caulking_Distance'][1], 2))),
-                    step=0.05
-                )
-                manual_sc = st.slider(
-                    "Manual Stud Center Boundary (mm)",
-                    min_value=0.0, max_value=10.0,
-                    value=(float(round(db['Stud_Center'][0], 2)), float(round(db['Stud_Center'][1], 2))),
-                    step=0.05
-                )
+                # [수정] 경계 설정 레이어 수치형 직접 타이핑 키인(st.number_input) 전환
+                b_col1, b_col2 = st.columns(2)
+                with b_col1:
+                    m_cd_min = st.number_input("CD Min Boundary (mm)", value=float(round(db['Caulking_Distance'][0], 2)), step=0.05, format="%.2f")
+                    m_sc_min = st.number_input("SC Min Boundary (mm)", value=float(round(db['Stud_Center'][0], 2)), step=0.05, format="%.2f")
+                with b_col2:
+                    m_cd_max = st.number_input("CD Max Boundary (mm)", value=float(round(db['Caulking_Distance'][1], 2)), step=0.05, format="%.2f")
+                    m_sc_max = st.number_input("SC Max Boundary (mm)", value=float(round(db['Stud_Center'][1], 2)), step=0.05, format="%.2f")
+                
                 chosen_bounds = {
-                    'Caulking_Distance': manual_cd,
-                    'Stud_Center': manual_sc
+                    'Caulking_Distance': (m_cd_min, m_cd_max),
+                    'Stud_Center': (m_sc_min, m_sc_max)
                 }
             st.markdown("</div>", unsafe_allow_html=True)
 
@@ -253,17 +251,18 @@ if st.session_state['model_tq']:
                     <div class='glass-card-title'>Target Quality KPIs Range</div>
             """, unsafe_allow_html=True)
             
-            st.session_state['target_tq_range'] = st.slider(
-                "Target Torque Metric (Nm)",
-                min_value=20.0, max_value=50.0,
-                value=st.session_state['target_tq_range'], step=0.1
-            )
+            # [수정] Target 품질 목표치 설정 수치형 직접 타이핑 키인(st.number_input) 전환
+            k_col1, k_col2 = st.columns(2)
+            with k_col1:
+                t_tq_min = st.number_input("Target Torque Min (Nm)", value=st.session_state['target_tq_range'][0], step=0.1, format="%.1f")
+                t_ed_min = st.number_input("Target Endurance Min (Cyc)", value=int(st.session_state['target_ed_range'][0]), step=1000)
+            with k_col2:
+                t_tq_max = st.number_input("Target Torque Max (Nm)", value=st.session_state['target_tq_range'][1], step=0.1, format="%.1f")
+                t_ed_max = st.number_input("Target Endurance Max (Cyc)", value=int(st.session_state['target_ed_range'][1]), step=1000)
             
-            st.session_state['target_ed_range'] = st.slider(
-                "Target Endurance Cycles (Cycles)",
-                min_value=50000, max_value=200000,
-                value=(int(st.session_state['target_ed_range'][0]), int(st.session_state['target_ed_range'][1])), step=1000
-            )
+            st.session_state['target_tq_range'] = (t_tq_min, t_tq_max)
+            st.session_state['target_ed_range'] = (float(t_ed_min), float(t_ed_max))
+            
             st.markdown("</div>", unsafe_allow_html=True)
             
             if st.button("RUN INVERSE INFERENCE SEARCH", type="secondary", use_container_width=True):
@@ -360,124 +359,4 @@ if st.session_state['model_tq']:
                 with c_cols[1]:
                     st.markdown(f"<div style='border-radius:4px; border-left:3px solid #10b981; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.8rem; font-weight:600;'>Stud Center</span><h3 style='color:#ffffff; font-size:1.6rem; margin:2px 0; font-family:JetBrains Mono;'>{opt_x[1]:.2f}<span style='font-size:0.85rem; color:#64748b;'> mm</span></h3></div>", unsafe_allow_html=True)
                 with c_cols[2]:
-                    st.markdown(f"<div style='border-radius:4px; border-left:3px solid #10b981; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.8rem; font-weight:600;'>Aging Status</span><h3 style='color:#ffffff; font-size:1.3rem; margin:6px 0; font-family:Inter; font-weight:600;'>{aging_text}</h3></div>", unsafe_allow_html=True)
-                st.markdown("</div>", unsafe_allow_html=True)
-
-                df_excel_data = pd.DataFrame({
-                    "KPI Parameters": ["Recommended Caulking Distance (mm)", "Recommended Stud Center (mm)", "Recommended Aging Status", 
-                                     "Expected Torque Value (Nm)", "Expected Endurance Life (Cycles)", "Optimization Confidence Score (%)"],
-                    "AI Optimized Specification": [f"{opt_x[0]:.2f}", f"{opt_x[1]:.2f}", aging_text, f"{st.session_state['opt_pred_tq']:.2f}", f"{st.session_state['opt_pred_ed']:,.0f}", f"{st.session_state['confidence_score']:.1f}"]
-                })
-                output = io.BytesIO()
-                with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                    df_excel_data.to_excel(writer, index=False, sheet_name='Optimization_Report')
-                
-                st.download_button(
-                    label="DOWNLOAD OPTIMIZATION REPORT (.XLSX)",
-                    data=output.getvalue(),
-                    file_name="Process_Optimization_Report.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-            else:
-                st.markdown("<div style='text-align:center; padding:100px 0; color:#475569; font-size:0.9rem;'>수치 지정 후 하단의 검색 버튼을 클릭하면 최적화 결과가 정렬됩니다.</div>", unsafe_allow_html=True)
-
-    # ------------------ TAB 2: 실시간 시뮬레이터 ------------------
-    with tab2:
-        sim_l, sim_r = st.columns([1.1, 1.4], gap="large")
-        
-        with sim_l:
-            st.markdown("""
-                <div class='glass-card'>
-                    <div class='glass-card-title'>Real-time Parameter Input Panel</div>
-            """, unsafe_allow_html=True)
-            
-            sim_cb = st.session_state['data_bounds']
-            sim_cd = st.slider(
-                "Live Field Caulking Distance (mm)",
-                min_value=0.0, max_value=15.0,
-                value=float(round((sim_cb['Caulking_Distance'][0] + sim_cb['Caulking_Distance'][1])/2, 2)), step=0.01
-            )
-            sim_sc = st.slider(
-                "Live Field Stud Center (mm)",
-                min_value=0.0, max_value=10.0,
-                value=float(round((sim_cb['Stud_Center'][0] + sim_cb['Stud_Center'][1])/2, 2)), step=0.01
-            )
-            sim_ag_label = st.radio(
-                "Live Field Aging Processing Status",
-                options=["Unaged (Status: 0)", "Aged (Status: 1)"], index=0
-            )
-            sim_ag = 1 if "Aged" in sim_ag_label else 0
-            st.markdown("</div>", unsafe_allow_html=True)
-            
-            if st.button("EXECUTE PREDICTIVE SIMULATION", type="secondary", use_container_width=True):
-                X_vars = st.session_state['process_vars']
-                df_sim_query = pd.DataFrame([[sim_cd, sim_sc, sim_ag]], columns=X_vars)
-                scaled_sim_query = st.session_state['scaler'].transform(df_sim_query)
-                
-                pred_tq = st.session_state['model_tq'].predict(scaled_sim_query)[0]
-                pred_ed = st.session_state['model_ed'].predict(scaled_sim_query)[0]
-                
-                cd_min, cd_max = sim_cb['Caulking_Distance']
-                sc_min, sc_max = sim_cb['Stud_Center']
-                
-                def calculate_bound_score(val, v_min, v_max):
-                    if v_min <= val <= v_max: return 100.0
-                    v_range = (v_max - v_min) if (v_max - v_min) > 0 else 1.0
-                    return max(0.0, 100.0 - (min(abs(val - v_min), abs(val - v_max)) / v_range * 200.0))
-                    
-                cd_score = calculate_bound_score(sim_cd, cd_min, cd_max)
-                sc_score = calculate_bound_score(sim_sc, sc_min, sc_max)
-                
-                st.session_state['sim_pred_tq'] = pred_tq
-                st.session_state['sim_pred_ed'] = pred_ed
-                st.session_state['sim_confidence'] = round((cd_score + sc_score) / 2.0, 1)
-                st.session_state['sim_executed_vars'] = [sim_cd, sim_sc, sim_ag]
-                st.rerun()
-
-        with sim_r:
-            if st.session_state['sim_pred_tq'] is not None:
-                st.markdown("""
-                    <div class='glass-card'>
-                        <div class='glass-card-title' style='color:#38bdf8;'>AI Forward Simulation Outputs</div>
-                """, unsafe_allow_html=True)
-                
-                s_res1, s_res2, s_res3 = st.columns(3)
-                with s_res1:
-                    st.markdown(f"<div style='border-radius:4px; border-left:3px solid #38bdf8; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.8rem; font-weight:600;'>AI Est. Torque</span><h3 style='color:#ffffff; font-size:1.6rem; margin:2px 0; font-family:JetBrains Mono;'>{st.session_state['sim_pred_tq']:.2f}<span style='font-size:0.85rem; color:#64748b;'> Nm</span></h3></div>", unsafe_allow_html=True)
-                with s_res2:
-                    st.markdown(f"<div style='border-radius:4px; border-left:3px solid #38bdf8; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.8rem; font-weight:600;'>AI Est. Endurance</span><h3 style='color:#ffffff; font-size:1.6rem; margin:2px 0; font-family:JetBrains Mono;'>{st.session_state['sim_pred_ed']:,.0f}<span style='font-size:0.85rem; color:#64748b;'> Cyc</span></h3></div>", unsafe_allow_html=True)
-                with s_res3:
-                    s_conf = st.session_state['sim_confidence']
-                    s_conf_color = "#10b981" if s_conf >= 80.0 else ("#f59e0b" if s_conf >= 50.0 else "#ef4444")
-                    st.markdown(f"<div style='border-radius:4px; border-left:3px solid {s_conf_color}; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.8rem; font-weight:600;'>Safe Range Index</span><h3 style='color:{s_conf_color}; font-size:1.6rem; margin:2px 0; font-family:JetBrains Mono;'>{s_conf:.1f}<span style='font-size:0.85rem; color:#64748b;'> %</span></h3></div>", unsafe_allow_html=True)
-                st.markdown("</div>", unsafe_allow_html=True)
-
-                ev = st.session_state['sim_executed_vars']
-                df_sim_excel = pd.DataFrame({
-                    "Simulation Log Parameters": ["Input Caulking Distance (mm)", "Input Stud Center (mm)", "Input Aging Configuration", "AI Synthesized Torque (Nm)", "AI Synthesized Endurance (Cycles)", "Safe Range Proximity Index (%)"],
-                    "Value Config Log": [f"{ev[0]:.2f}", f"{ev[1]:.2f}", "Aged" if ev[2] == 1 else "Unaged", f"{st.session_state['sim_pred_tq']:.2f}", f"{st.session_state['sim_pred_ed']:,.0f}", f"{st.session_state['sim_confidence']:.1f}"]
-                })
-                sim_output = io.BytesIO()
-                with pd.ExcelWriter(sim_output, engine='openpyxl') as writer:
-                    df_sim_excel.to_excel(writer, index=False, sheet_name='Simulation_Report')
-                
-                st.download_button(
-                    label="DOWNLOAD SIMULATION REPORT (.XLSX)",
-                    data=sim_output.getvalue(),
-                    file_name="Simulation_Report.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-            else:
-                st.markdown("<div style='text-align:center; padding:100px 0; color:#475569; font-size:0.9rem;'>변수를 입력한 후 시뮬레이션 실행 버튼을 클릭하면 결과 카드가 정렬됩니다.</div>", unsafe_allow_html=True)
-
-    # ------------------ TAB 3: 공정 로그 데이터레이크 ------------------
-    with tab3:
-        st.markdown("""
-            <div class='glass-card'>
-                <div class='glass-card-title'>Central Data Repository Log</div>
-        """, unsafe_allow_html=True)
-        st.dataframe(st.session_state['df_caulking'], use_container_width=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-else:
-    st.markdown("<br><br>", unsafe_allow_html=True)
-    st.info("CORE ENGINE INACTIVE: 좌측 CONTROL CONSOLE에서 로그 파일을 로드한 후 가동해 주십시오.")
+                    st.markdown(f"<div style='border-radius:4px; border-left:3px solid #10b981; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.8rem; font-weight:600;'>Aging Status</span><h3 style='color:#ffffff; font-size:1.3rem; margin:6px 0; font-family:Inter; font-
