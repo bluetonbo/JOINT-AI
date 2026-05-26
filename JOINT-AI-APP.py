@@ -111,7 +111,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 3. 보안 인증 (Admin1234) - 요청하신 문구 수정 반영
+# 3. 보안 인증 (Admin1234)
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
@@ -126,7 +126,7 @@ if not st.session_state.authenticated:
                 st.rerun()
     st.stop()
 
-# 4. 세션 데이터 구조 초기화 (시뮬레이터용 신뢰도 및 파일 다운로드 키셋 추가)
+# 4. 세션 데이터 구조 초기화
 if 'model_tq' not in st.session_state:
     st.session_state.update({
         'model_tq': None, 'model_ed': None, 'scaler': None, 'df_caulking': pd.DataFrame(),
@@ -330,15 +330,7 @@ if st.session_state['model_tq']:
             opt_x = st.session_state['opt_result_x']
             aging_text = "Aged (에이징 적용)" if round(opt_x[2]) == 1 else "Unaged (미적용)"
             
-            st.markdown("<h3 style='color:#ffffff; margin-top: 25px;'>AI 분석 기반 권장 공정 사양</h3>", unsafe_allow_html=True)
-            c_col1, c_col2, c_col3 = st.columns(3)
-            with c_col1:
-                st.markdown(f"<div style='border-radius: 6px; border-left: 6px solid #10b981; padding: 20px; background: #1f2937;'><span style='color: #9ca3af; font-size: 0.9rem; font-weight:600;'>추천 코킹 거리 (Caulking_Distance)</span><h2 style='color: #ffffff; font-size: 2.5rem; margin: 5px 0; font-family: JetBrains Mono;'>{opt_x[0]:.2f} <span style='font-size:1.2rem; color:#10b981;'>mm</span></h2></div>", unsafe_allow_html=True)
-            with c_col2:
-                st.markdown(f"<div style='border-radius: 6px; border-left: 6px solid #10b981; padding: 20px; background: #1f2937;'><span style='color: #9ca3af; font-size: 0.9rem; font-weight:600;'>추천 스터드 센터 (Stud_Center)</span><h2 style='color: #ffffff; font-size: 2.5rem; margin: 5px 0; font-family: JetBrains Mono;'>{opt_x[1]:.2f} <span style='font-size:1.2rem; color:#10b981;'>mm</span></h2></div>", unsafe_allow_html=True)
-            with c_col3:
-                st.markdown(f"<div style='border-radius: 6px; border-left: 6px solid #10b981; padding: 20px; background: #1f2937;'><span style='color: #9ca3af; font-size: 0.9rem; font-weight:600;'>추천 에이징 여부 (Aging_Status)</span><h2 style='color: #ffffff; font-size: 1.8rem; margin: 12px 0; font-family: Inter; font-weight:700;'>{aging_text}</h2></div>", unsafe_allow_html=True)
-            
+            # [변경] 해당 조건 세팅 시 예상 품질 인자 및 신뢰도 블록을 상단으로 전진 배치
             st.markdown("<h3 style='color:#ffffff; margin-top: 25px;'>해당 조건 세팅 시 예상 품질 인자 및 신뢰도</h3>", unsafe_allow_html=True)
             r_col1, r_col2, r_col3 = st.columns(3)
             with r_col1:
@@ -348,6 +340,16 @@ if st.session_state['model_tq']:
             with r_col3:
                 conf_color = "#10b981" if st.session_state['confidence_score'] >= 80.0 else "#ef4444"
                 st.markdown(f"<div style='border-radius: 6px; border-left: 6px solid {conf_color}; padding: 20px; background: #1f2937;'><span style='color: #9ca3af; font-size: 0.9rem; font-weight:600;'>품질 조건 만족 범위 신뢰도</span><h2 style='color: #ffffff; font-size: 2.5rem; margin: 5px 0; font-family: JetBrains Mono;'>{st.session_state['confidence_score']:.1f} <span style='font-size:1.2rem; color:{conf_color};'>%</span></h2></div>", unsafe_allow_html=True)
+
+            # [변경] AI 분석 기반 권장 공정 사양 블록을 하단으로 배치
+            st.markdown("<h3 style='color:#ffffff; margin-top: 25px;'>AI 분석 기반 권장 공정 사양</h3>", unsafe_allow_html=True)
+            c_col1, c_col2, c_col3 = st.columns(3)
+            with c_col1:
+                st.markdown(f"<div style='border-radius: 6px; border-left: 6px solid #10b981; padding: 20px; background: #1f2937;'><span style='color: #9ca3af; font-size: 0.9rem; font-weight:600;'>추천 코킹 거리 (Caulking_Distance)</span><h2 style='color: #ffffff; font-size: 2.5rem; margin: 5px 0; font-family: JetBrains Mono;'>{opt_x[0]:.2f} <span style='font-size:1.2rem; color:#10b981;'>mm</span></h2></div>", unsafe_allow_html=True)
+            with c_col2:
+                st.markdown(f"<div style='border-radius: 6px; border-left: 6px solid #10b981; padding: 20px; background: #1f2937;'><span style='color: #9ca3af; font-size: 0.9rem; font-weight:600;'>추천 스터드 센터 (Stud_Center)</span><h2 style='color: #ffffff; font-size: 2.5rem; margin: 5px 0; font-family: JetBrains Mono;'>{opt_x[1]:.2f} <span style='font-size:1.2rem; color:#10b981;'>mm</span></h2></div>", unsafe_allow_html=True)
+            with c_col3:
+                st.markdown(f"<div style='border-radius: 6px; border-left: 6px solid #10b981; padding: 20px; background: #1f2937;'><span style='color: #9ca3af; font-size: 0.9rem; font-weight:600;'>추천 에이징 여부 (Aging_Status)</span><h2 style='color: #ffffff; font-size: 1.8rem; margin: 12px 0; font-family: Inter; font-weight:700;'>{aging_text}</h2></div>", unsafe_allow_html=True)
 
             st.markdown("<br>", unsafe_allow_html=True)
             df_excel_data = pd.DataFrame({
@@ -378,7 +380,6 @@ if st.session_state['model_tq']:
         
         sim_col1, sim_col2 = st.columns([1, 1], gap="large")
         with sim_col1:
-            # 현장 시뮬레이터 특성상 데이터 최소/최대값 이외의 극단적 영역도 모의 테스트 가능하도록 슬라이더 가동 범위 확대
             sim_cd = st.slider(
                 "현장 코킹 거리 입력 (Caulking_Distance, mm)",
                 min_value=0.0, max_value=15.0,
@@ -409,11 +410,9 @@ if st.session_state['model_tq']:
             df_sim_query = pd.DataFrame([[sim_cd, sim_sc, sim_ag]], columns=X_vars)
             scaled_sim_query = st.session_state['scaler'].transform(df_sim_query)
             
-            # 1. 품질 인자 선형 예측 
             pred_tq = st.session_state['model_tq'].predict(scaled_sim_query)[0]
             pred_ed = st.session_state['model_ed'].predict(scaled_sim_query)[0]
             
-            # 2. 경험 한계선 기준 실시간 데이터 신뢰도 정량 연산 로직 구현
             cd_min, cd_max = sim_cb['Caulking_Distance']
             sc_min, sc_max = sim_cb['Stud_Center']
             
@@ -422,7 +421,6 @@ if st.session_state['model_tq']:
                     return 100.0
                 v_range = (v_max - v_min) if (v_max - v_min) > 0 else 1.0
                 distance = min(abs(val - v_min), abs(val - v_max))
-                # 데이터 커버리지를 넘어선 비율에 맞춰 감점 계수(200.0) 적용
                 return max(0.0, 100.0 - (distance / v_range * 200.0))
                 
             cd_score = calculate_bound_score(sim_cd, cd_min, cd_max)
@@ -436,7 +434,7 @@ if st.session_state['model_tq']:
 
         if st.session_state['sim_pred_tq'] is not None:
             st.markdown("<h3 style='color:#ffffff; margin-top: 30px;'>입력된 조건에 대한 AI 품질 예측 결과 및 예측 안전성</h3>", unsafe_allow_html=True)
-            s_res1, s_res2, s_res3 = st.columns(3) # 실시간 예측 신뢰도 표현을 위해 3열 대시보드로 수평 확장
+            s_res1, s_res2, s_res3 = st.columns(3)
             with s_res1:
                 st.markdown(f"""
                     <div style='border-radius: 6px; border-left: 6px solid #3b82f6; padding: 25px; background: #1f2937;'>
@@ -452,7 +450,6 @@ if st.session_state['model_tq']:
                     </div>
                 """, unsafe_allow_html=True)
             with s_res3:
-                # 점수 범주별 실시간 인디케이터 컬러 매핑 (80+ 녹색, 50+ 황색, 미만 적색)
                 s_conf = st.session_state['sim_confidence']
                 s_conf_color = "#10b981" if s_conf >= 80.0 else ("#f59e0b" if s_conf >= 50.0 else "#ef4444")
                 st.markdown(f"""
@@ -462,7 +459,6 @@ if st.session_state['model_tq']:
                     </div>
                 """, unsafe_allow_html=True)
 
-            # 시뮬레이터 결과 엑셀 다운로드 (데이터 신뢰도 항목 추가 반영)
             st.markdown("<br>", unsafe_allow_html=True)
             ev = st.session_state['sim_executed_vars']
             df_sim_excel = pd.DataFrame({
