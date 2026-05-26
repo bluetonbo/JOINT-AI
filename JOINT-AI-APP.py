@@ -521,4 +521,4 @@ if st.session_state['model_tq']:
         st.markdown("</div>", unsafe_allow_html=True)
 else:
     st.markdown("<br><br>", unsafe_allow_html=True)
-    st.info("CORE ENGINE INACTIVE: 좌측 CONTROL CONSOLE에서 로그 파일을 로드한 후 가동해 주십시오.")
+    st.info("CORE ENGINE INACTIVE: System initialization required. Please upload the data log via the sidebar CONTROL CONSOLE.")
