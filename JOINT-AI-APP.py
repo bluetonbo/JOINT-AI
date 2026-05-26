@@ -359,7 +359,7 @@ if st.session_state['model_tq']:
         with layout_r:
             if st.session_state['opt_result_x'] is not None:
                 opt_x = st.session_state['opt_result_x']
-                aging_text = "Aged (에이징 적용)" if round(opt_x[2]) == 1 else "Unaged (미적용)"
+                aging_text = "Aged (에이징 적용)" if round(opt_x[2]) == 1 else "Unaged"
                 
                 # 블록 1: 예상 품질 결과 패널 (FANCY 카드 스타일)
                 st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
