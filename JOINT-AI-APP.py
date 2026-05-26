@@ -74,12 +74,11 @@ st.markdown("""
         background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%) !important;
     }
 
-    /* 숫자 입력창 라벨 스타일 정의 */
-    .stNumberInput label {
+    .stNumberInput label, .stSlider label {
         color: #94a3b8 !important;
         font-weight: 500 !important;
         font-size: 0.85rem !important;
-        margin-bottom: 4px !important;
+        margin-bottom: 2px !important;
     }
     
     button[data-baseweb="tab"] {
@@ -129,7 +128,7 @@ if not st.session_state.authenticated:
                 st.error("Invalid credentials. System access denied.")
     st.stop()
 
-# 4. 세션 데이터 구조 초기화
+# 4. 세션 데이터 구조 초기화 및 초기 세팅값 바인딩
 if 'model_tq' not in st.session_state:
     st.session_state.update({
         'model_tq': None, 'model_ed': None, 'scaler': None, 'df_caulking': pd.DataFrame(),
@@ -140,8 +139,13 @@ if 'model_tq' not in st.session_state:
             'Aging_Status': (0, 1)
         },
         'optimizer_status': "STANDBY",
-        'target_tq_range': (35.0, 37.0),
-        'target_ed_range': (125000.0, 126000.0),
+        
+        # 동적 제어를 위한 상태 변수
+        'm_cd_min': 4.0, 'm_cd_max': 7.0, 'm_sc_min': 1.5, 'm_sc_max': 3.5,
+        't_tq_min': 35.0, 't_tq_max': 37.0, 't_ed_min': 125000, 't_ed_max': 126000,
+        'sim_cd': 5.5, 'sim_sc': 2.5,
+        
+        'target_tq_range': (35.0, 37.0), 'target_ed_range': (125000.0, 126000.0),
         'opt_result_x': None, 'opt_pred_tq': None, 'opt_pred_ed': None, 'confidence_score': None,
         'sim_pred_tq': None, 'sim_pred_ed': None, 'sim_executed_vars': None, 'sim_confidence': None
     })
@@ -169,14 +173,21 @@ with st.sidebar:
             model_tq = LinearRegression().fit(X_scaled, df_comb['Torque'])
             model_ed = LinearRegression().fit(X_scaled, df_comb['Endurance'])
             
+            init_cd_min, init_cd_max = float(df_comb['Caulking_Distance'].min()), float(df_comb['Caulking_Distance'].max())
+            init_sc_min, init_sc_max = float(df_comb['Stud_Center'].min()), float(df_comb['Stud_Center'].max())
+            
             st.session_state.update({
                 'model_tq': model_tq, 'model_ed': model_ed, 'scaler': scaler, 'df_caulking': df_comb,
                 'optimizer_status': "ENGINE READY",
                 'data_bounds': {
-                    'Caulking_Distance': (float(df_comb['Caulking_Distance'].min()), float(df_comb['Caulking_Distance'].max())),
-                    'Stud_Center': (float(df_comb['Stud_Center'].min()), float(df_comb['Stud_Center'].max())),
+                    'Caulking_Distance': (init_cd_min, init_cd_max),
+                    'Stud_Center': (init_sc_min, init_sc_max),
                     'Aging_Status': (0, 1)
-                }
+                },
+                'm_cd_min': init_cd_min, 'm_cd_max': init_cd_max,
+                'm_sc_min': init_sc_min, 'm_sc_max': init_sc_max,
+                'sim_cd': float(round((init_cd_min + init_cd_max) / 2, 2)),
+                'sim_sc': float(round((init_sc_min + init_sc_max) / 2, 2))
             })
             st.rerun()
         else:
@@ -231,18 +242,30 @@ if st.session_state['model_tq']:
                     'Stud_Center': db['Stud_Center']
                 }
             else:
-                # [수정] 경계 설정 레이어 수치형 직접 타이핑 키인(st.number_input) 전환
-                b_col1, b_col2 = st.columns(2)
-                with b_col1:
-                    m_cd_min = st.number_input("CD Min Boundary (mm)", value=float(round(db['Caulking_Distance'][0], 2)), step=0.05, format="%.2f")
-                    m_sc_min = st.number_input("SC Min Boundary (mm)", value=float(round(db['Stud_Center'][0], 2)), step=0.05, format="%.2f")
-                with b_col2:
-                    m_cd_max = st.number_input("CD Max Boundary (mm)", value=float(round(db['Caulking_Distance'][1], 2)), step=0.05, format="%.2f")
-                    m_sc_max = st.number_input("SC Max Boundary (mm)", value=float(round(db['Stud_Center'][1], 2)), step=0.05, format="%.2f")
+                # 콜백 동기화 구조 적용 - 수치 타이핑 & 마우스 드래그 슬라이더 병합
+                st.markdown("<span style='font-size:0.85rem; font-weight:500; color:#cbd5e1;'>Manual Caulking Distance Boundary (mm)</span>", unsafe_allow_html=True)
+                cd_s_col, cd_n1, cd_n2 = st.columns([2, 1, 1])
+                with cd_n1:
+                    st.session_state['m_cd_min'] = st.number_input("CD Min Input", min_value=0.0, max_value=15.0, value=st.session_state['m_cd_min'], step=0.05, format="%.2f", label_visibility="collapsed")
+                with cd_n2:
+                    st.session_state['m_cd_max'] = st.number_input("CD Max Input", min_value=0.0, max_value=15.0, value=st.session_state['m_cd_max'], step=0.05, format="%.2f", label_visibility="collapsed")
+                with cd_s_col:
+                    cd_slider_val = st.slider("CD Range Slider", min_value=0.0, max_value=15.0, value=(st.session_state['m_cd_min'], st.session_state['m_cd_max']), step=0.05, label_visibility="collapsed")
+                    st.session_state['m_cd_min'], st.session_state['m_cd_max'] = cd_slider_val
+
+                st.markdown("<span style='font-size:0.85rem; font-weight:500; color:#cbd5e1;'>Manual Stud Center Boundary (mm)</span>", unsafe_allow_html=True)
+                sc_s_col, sc_n1, sc_n2 = st.columns([2, 1, 1])
+                with sc_n1:
+                    st.session_state['m_sc_min'] = st.number_input("SC Min Input", min_value=0.0, max_value=10.0, value=st.session_state['m_sc_min'], step=0.05, format="%.2f", label_visibility="collapsed")
+                with sc_n2:
+                    st.session_state['m_sc_max'] = st.number_input("SC Max Input", min_value=0.0, max_value=10.0, value=st.session_state['m_sc_max'], step=0.05, format="%.2f", label_visibility="collapsed")
+                with sc_s_col:
+                    sc_slider_val = st.slider("SC Range Slider", min_value=0.0, max_value=10.0, value=(st.session_state['m_sc_min'], st.session_state['m_sc_max']), step=0.05, label_visibility="collapsed")
+                    st.session_state['m_sc_min'], st.session_state['m_sc_max'] = sc_slider_val
                 
                 chosen_bounds = {
-                    'Caulking_Distance': (m_cd_min, m_cd_max),
-                    'Stud_Center': (m_sc_min, m_sc_max)
+                    'Caulking_Distance': (st.session_state['m_cd_min'], st.session_state['m_cd_max']),
+                    'Stud_Center': (st.session_state['m_sc_min'], st.session_state['m_sc_max'])
                 }
             st.markdown("</div>", unsafe_allow_html=True)
 
@@ -251,17 +274,29 @@ if st.session_state['model_tq']:
                     <div class='glass-card-title'>Target Quality KPIs Range</div>
             """, unsafe_allow_html=True)
             
-            # [수정] Target 품질 목표치 설정 수치형 직접 타이핑 키인(st.number_input) 전환
-            k_col1, k_col2 = st.columns(2)
-            with k_col1:
-                t_tq_min = st.number_input("Target Torque Min (Nm)", value=st.session_state['target_tq_range'][0], step=0.1, format="%.1f")
-                t_ed_min = st.number_input("Target Endurance Min (Cyc)", value=int(st.session_state['target_ed_range'][0]), step=1000)
-            with k_col2:
-                t_tq_max = st.number_input("Target Torque Max (Nm)", value=st.session_state['target_tq_range'][1], step=0.1, format="%.1f")
-                t_ed_max = st.number_input("Target Endurance Max (Cyc)", value=int(st.session_state['target_ed_range'][1]), step=1000)
+            # 품질 타겟 팩터 동기화 표현 레이어
+            st.markdown("<span style='font-size:0.85rem; font-weight:500; color:#cbd5e1;'>Target Torque Metric (Nm)</span>", unsafe_allow_html=True)
+            tq_s_col, tq_n1, tq_n2 = st.columns([2, 1, 1])
+            with tq_n1:
+                st.session_state['t_tq_min'] = st.number_input("TQ Min In", min_value=20.0, max_value=50.0, value=st.session_state['t_tq_min'], step=0.1, format="%.1f", label_visibility="collapsed")
+            with tq_n2:
+                st.session_state['t_tq_max'] = st.number_input("TQ Max In", min_value=20.0, max_value=50.0, value=st.session_state['t_tq_max'], step=0.1, format="%.1f", label_visibility="collapsed")
+            with tq_s_col:
+                tq_slider_val = st.slider("TQ Range Slider", min_value=20.0, max_value=50.0, value=(st.session_state['t_tq_min'], st.session_state['t_tq_max']), step=0.1, label_visibility="collapsed")
+                st.session_state['t_tq_min'], st.session_state['t_tq_max'] = tq_slider_val
+
+            st.markdown("<span style='font-size:0.85rem; font-weight:500; color:#cbd5e1;'>Target Endurance Cycles (Cycles)</span>", unsafe_allow_html=True)
+            ed_s_col, ed_n1, ed_n2 = st.columns([2, 1, 1])
+            with ed_n1:
+                st.session_state['t_ed_min'] = st.number_input("ED Min In", min_value=50000, max_value=200000, value=int(st.session_state['t_ed_min']), step=1000, label_visibility="collapsed")
+            with ed_n2:
+                st.session_state['t_ed_max'] = st.number_input("ED Max In", min_value=50000, max_value=200000, value=int(st.session_state['t_ed_max']), step=1000, label_visibility="collapsed")
+            with ed_s_col:
+                ed_slider_val = st.slider("ED Range Slider", min_value=50000, max_value=200000, value=(int(st.session_state['t_ed_min']), int(st.session_state['t_ed_max'])), step=1000, label_visibility="collapsed")
+                st.session_state['t_ed_min'], st.session_state['t_ed_max'] = ed_slider_val
             
-            st.session_state['target_tq_range'] = (t_tq_min, t_tq_max)
-            st.session_state['target_ed_range'] = (float(t_ed_min), float(t_ed_max))
+            st.session_state['target_tq_range'] = (st.session_state['t_tq_min'], st.session_state['t_tq_max'])
+            st.session_state['target_ed_range'] = (float(st.session_state['t_ed_min']), float(st.session_state['t_ed_max']))
             
             st.markdown("</div>", unsafe_allow_html=True)
             
@@ -392,19 +427,21 @@ if st.session_state['model_tq']:
             
             sim_cb = st.session_state['data_bounds']
             
-            # [수정] What-if 시뮬레이터 변수 입력 방식도 드래그에서 키보드 숫자 키인(st.number_input)으로 변경
-            sim_cd = st.number_input(
-                "Live Field Caulking Distance (mm)",
-                min_value=0.0, max_value=15.0,
-                value=float(round((sim_cb['Caulking_Distance'][0] + sim_cb['Caulking_Distance'][1])/2, 2)), 
-                step=0.01, format="%.2f"
-            )
-            sim_sc = st.number_input(
-                "Live Field Stud Center (mm)",
-                min_value=0.0, max_value=10.0,
-                value=float(round((sim_cb['Stud_Center'][0] + sim_cb['Stud_Center'][1])/2, 2)), 
-                step=0.01, format="%.2f"
-            )
+            # What-if 시뮬레이터 커서 이동 + 직접 수치 타이핑 복합 구조
+            st.markdown("<span style='font-size:0.85rem; font-weight:500; color:#cbd5e1;'>Live Field Caulking Distance (mm)</span>", unsafe_allow_html=True)
+            scd_col1, scd_col2 = st.columns([2, 1])
+            with scd_col2:
+                st.session_state['sim_cd'] = st.number_input("CD Simulation Input", min_value=0.0, max_value=15.0, value=st.session_state['sim_cd'], step=0.01, format="%.2f", label_visibility="collapsed")
+            with scd_col1:
+                st.session_state['sim_cd'] = st.slider("CD Simulation Slider", min_value=0.0, max_value=15.0, value=st.session_state['sim_cd'], step=0.01, label_visibility="collapsed")
+
+            st.markdown("<span style='font-size:0.85rem; font-weight:500; color:#cbd5e1;'>Live Field Stud Center (mm)</span>", unsafe_allow_html=True)
+            ssc_col1, ssc_col2 = st.columns([2, 1])
+            with ssc_col2:
+                st.session_state['sim_sc'] = st.number_input("SC Simulation Input", min_value=0.0, max_value=10.0, value=st.session_state['sim_sc'], step=0.01, format="%.2f", label_visibility="collapsed")
+            with ssc_col1:
+                st.session_state['sim_sc'] = st.slider("SC Simulation Slider", min_value=0.0, max_value=10.0, value=st.session_state['sim_sc'], step=0.01, label_visibility="collapsed")
+            
             sim_ag_label = st.radio(
                 "Live Field Aging Processing Status",
                 options=["Unaged (Status: 0)", "Aged (Status: 1)"], index=0
@@ -414,7 +451,7 @@ if st.session_state['model_tq']:
             
             if st.button("EXECUTE PREDICTIVE SIMULATION", type="secondary", use_container_width=True):
                 X_vars = st.session_state['process_vars']
-                df_sim_query = pd.DataFrame([[sim_cd, sim_sc, sim_ag]], columns=X_vars)
+                df_sim_query = pd.DataFrame([[st.session_state['sim_cd'], st.session_state['sim_sc'], sim_ag]], columns=X_vars)
                 scaled_sim_query = st.session_state['scaler'].transform(df_sim_query)
                 
                 pred_tq = st.session_state['model_tq'].predict(scaled_sim_query)[0]
@@ -428,13 +465,13 @@ if st.session_state['model_tq']:
                     v_range = (v_max - v_min) if (v_max - v_min) > 0 else 1.0
                     return max(0.0, 100.0 - (min(abs(val - v_min), abs(val - v_max)) / v_range * 200.0))
                     
-                cd_score = calculate_bound_score(sim_cd, cd_min, cd_max)
-                sc_score = calculate_bound_score(sim_sc, sc_min, sc_max)
+                cd_score = calculate_bound_score(st.session_state['sim_cd'], cd_min, cd_max)
+                sc_score = calculate_bound_score(st.session_state['sim_sc'], sc_min, sc_max)
                 
                 st.session_state['sim_pred_tq'] = pred_tq
                 st.session_state['sim_pred_ed'] = pred_ed
                 st.session_state['sim_confidence'] = round((cd_score + sc_score) / 2.0, 1)
-                st.session_state['sim_executed_vars'] = [sim_cd, sim_sc, sim_ag]
+                st.session_state['sim_executed_vars'] = [st.session_state['sim_cd'], st.session_state['sim_sc'], sim_ag]
                 st.rerun()
 
         with sim_r:
