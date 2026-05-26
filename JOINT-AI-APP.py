@@ -9,7 +9,7 @@ from scipy.optimize import minimize
 # 1. 페이지 설정: 태블릿 및 데스크탑 확장 레이아웃
 st.set_page_config(
     layout="wide", 
-    page_title="Caulking Parameter Target Finder",
+    page_title="Optimization Conditions of Joint",
     page_icon="---"
 )
 
@@ -140,18 +140,19 @@ if 'model_tq' not in st.session_state:
         'target_tq_range': (35.0, 37.0),
         'target_ed_range': (125000.0, 126000.0),
         'opt_result_x': None, 'opt_pred_tq': None, 'opt_pred_ed': None, 'confidence_score': None,
-        
-        # 시뮬레이터 수동 실행을 위한 세션 독립 변수 추가
         'sim_pred_tq': None, 'sim_pred_ed': None, 'sim_executed_vars': None
     })
 
 # 5. 사이드바 - JOINT-INPUT 데이터 패널 관리
 with st.sidebar:
     st.markdown("<h3 style='color: #10b981; font-family: JetBrains Mono;'>DATA MANAGEMENT</h3>", unsafe_allow_html=True)
-    with st.expander("공정 데이터 자산 로드", expanded=True):
+    
+    # [수정] 공정 데이터 자산 로드 -> 공정 데이터 로드
+    with st.expander("공정 데이터 로드", expanded=True):
         u_input = st.file_uploader("JOINT-INPUT 데이터 업로드 (CSV, XLSX)", type=['csv','xlsx'])
     
-    if st.button("AI 엔진 및 모델 최적화 가동", type="primary"):
+    # [수정] AI 엔진 및 모델 최적화 가동 -> AI 엔진 및 공정 최적화 실행
+    if st.button("AI 엔진 및 공정 최적화 실행", type="primary"):
         if u_input:
             def load_data(f):
                 return pd.read_csv(f) if f.name.endswith('csv') else pd.read_excel(f)
@@ -181,7 +182,8 @@ with st.sidebar:
 
 # 6. 메인 통합 관제 대시보드
 if st.session_state['model_tq']:
-    st.markdown("<h1>Caulking Target <span style='color:#10b981; font-family:JetBrains Mono;'>Condition Finder</span></h1>", unsafe_allow_html=True)
+    # [수정] Caulking Target Condition Finder -> Optimization Conditions of Joint
+    st.markdown("<h1>Optimization Conditions <span style='color:#10b981; font-family:JetBrains Mono;'>of Joint</span></h1>", unsafe_allow_html=True)
     
     # 상단 모니터링 메트릭 영역
     m1, m2, m3 = st.columns(3)
@@ -334,7 +336,7 @@ if st.session_state['model_tq']:
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 
-    # ------------------ TAB 2: 현장 변수 실시간 시뮬레이터 (버튼 실행 방식으로 수정) ------------------
+    # ------------------ TAB 2: 현장 변수 실시간 시뮬레이터 ------------------
     with tab2:
         st.markdown("<h4 style='color:#e5e7eb; margin-bottom:15px;'>현장 실시간 공정 조건 입력 패널</h4>", unsafe_allow_html=True)
         st.info("현재 현장 설비에 셋팅된 공정 변수값을 슬라이더로 조절한 후, 아래 [현장 입력 조건 기반 품질 예측 연산 실행] 버튼을 눌러 계산하세요.")
@@ -370,7 +372,6 @@ if st.session_state['model_tq']:
 
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # [수정] 사용자가 직접 연산을 컨트롤할 수 있는 실행 버튼 도입
         if st.button("현장 입력 조건 기반 품질 예측 연산 실행", type="primary", use_container_width=True):
             X_vars = st.session_state['process_vars']
             df_sim_query = pd.DataFrame([[sim_cd, sim_sc, sim_ag]], columns=X_vars)
@@ -381,7 +382,6 @@ if st.session_state['model_tq']:
             st.session_state['sim_executed_vars'] = [sim_cd, sim_sc, sim_ag]
             st.rerun()
 
-        # 연산 결과가 세션에 존재할 때만 시각화 영역 출력
         if st.session_state['sim_pred_tq'] is not None:
             st.markdown("<h3 style='color:#ffffff; margin-top: 30px;'>입력된 조건에 대한 AI 품질 예측 결과</h3>", unsafe_allow_html=True)
             s_res1, s_res2 = st.columns(2)
@@ -400,7 +400,7 @@ if st.session_state['model_tq']:
                     </div>
                 """, unsafe_allow_html=True)
 
-            # 시뮬레이터 결과 엑셀 다운로드 (실행된 시점의 최종 연산 조건값 박제)
+            # 시뮬레이터 결과 엑셀 다운로드
             st.markdown("<br>", unsafe_allow_html=True)
             ev = st.session_state['sim_executed_vars']
             df_sim_excel = pd.DataFrame({
@@ -425,4 +425,5 @@ if st.session_state['model_tq']:
         st.markdown("#### 원천 학습 데이터 통합 로그")
         st.dataframe(st.session_state['df_caulking'], use_container_width=True)
 else:
-    st.info("대시보드 활성화를 위해 왼쪽 사이드바 패널에서 'JOINT-INPUT' 원천 데이터 파일을 로드한 후 가동 버튼을 클릭하십시오.")
+    # [수정] 안내 문구 변경: 가동 버튼 -> 실행 버튼
+    st.info("활성화를 위해 왼쪽 사이드바 패널에서 'JOINT-INPUT' 원천 데이터 파일을 로드한 후 실행 버튼을 클릭하십시오.")
