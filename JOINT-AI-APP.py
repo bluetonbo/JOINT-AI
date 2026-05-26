@@ -134,16 +134,21 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 3. 시스템 암호 인증 패널
+# 3. 시스템 암호 인증 패널 (오류 사각형 제거 및 완전 사각 매칭)
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
     _, center, _ = st.columns([1, 1.8, 1])
     with center:
-        st.markdown("<br><br><div class='glass-card' style='text-align: center; padding: 40px;'>", unsafe_allow_html=True)
-        st.markdown("<h2 style='color: #10b981; margin-bottom: 5px;'>JOINT PROCESS INTELLIGENCE</h2>", unsafe_allow_html=True)
-        st.markdown("<p style='color: #64748b; font-size:0.9rem; margin-bottom: 30px;'>Core AI Optimization Dashboard Terminal</p>", unsafe_allow_html=True)
+        st.markdown("<br><br>", unsafe_allow_html=True)
+        st.markdown("""
+            <div class='glass-card' style='text-align: center; padding: 40px; margin-bottom: 25px;'>
+                <h2 style='color: #10b981; margin-top: 0px; margin-bottom: 5px; font-size: 2rem;'>JOINT PROCESS INTELLIGENCE</h2>
+                <p style='color: #64748b; font-size:0.95rem; margin-bottom: 0px;'>Core AI Optimization Dashboard Terminal</p>
+            </div>
+        """, unsafe_allow_html=True)
+        
         pwd = st.text_input("Enter System Token Password", type="password")
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("AUTHENTICATE SYSTEM"):
@@ -152,7 +157,6 @@ if not st.session_state.authenticated:
                 st.rerun()
             else:
                 st.error("Invalid credentials. System access denied.")
-        st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
 # 4. 세션 데이터 구조 초기화
@@ -216,7 +220,6 @@ if st.session_state['model_tq']:
         st.markdown("<h1 style='margin-bottom:0px; font-size:2.2rem;'>JOINT PROCESS INTELLIGENCE</h1>", unsafe_allow_html=True)
         st.markdown("<p style='color:#64748b; margin-bottom:25px;'>Real-time Inverse Optimization & Quality Simulation Terminal</p>", unsafe_allow_html=True)
     with h_right:
-        # 상용 UI 스타일 상단 모니터링 뱃지 리스트
         st.markdown(f"""
             <div style='display:flex; gap:10px; justify-content:flex-end; align-items:center; height:100%; padding-bottom:20px;'>
                 <span style='background:#1e293b; color:#38bdf8; padding:6px 12px; border-radius:4px; font-size:0.8rem; font-weight:700; border:1px solid #334155;'>CORE: ACTIVE</span>
@@ -229,7 +232,6 @@ if st.session_state['model_tq']:
 
     # ------------------ TAB 1: 품질 타겟 추적 솔루션 ------------------
     with tab1:
-        # 좌측 조건 셋팅 패널 / 우측 실시간 결과 디스플레이 투트랙 레이아웃
         layout_l, layout_r = st.columns([1.1, 1.4], gap="large")
         
         with layout_l:
@@ -292,7 +294,6 @@ if st.session_state['model_tq']:
             )
             st.markdown("</div>", unsafe_allow_html=True)
             
-            # 역산 추적 실행 버튼 (중요 버튼이므로 파란색 계열 매칭)
             if st.button("RUN INVERSE INFERENCE SEARCH", type="secondary", use_container_width=True):
                 X_vars = st.session_state['process_vars']
                 
@@ -361,7 +362,6 @@ if st.session_state['model_tq']:
                 opt_x = st.session_state['opt_result_x']
                 aging_text = "Aged (에이징 적용)" if round(opt_x[2]) == 1 else "Unaged"
                 
-                # 블록 1: 예상 품질 결과 패널 (FANCY 카드 스타일)
                 st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
                 st.markdown("<div class='glass-card-title' style='color:#3b82f6;'>📊 Predicted Quality Performance & Model Confidence</div>", unsafe_allow_html=True)
                 
@@ -375,11 +375,9 @@ if st.session_state['model_tq']:
                     st.markdown(f"<div style='border-radius:6px; border-left:4px solid {conf_color}; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.85rem; font-weight:600;'>Target Confidence</span><h3 style='color:{conf_color}; font-size:1.8rem; margin:2px 0; font-family:JetBrains Mono;'>{st.session_state['confidence_score']:.1f}<span style='font-size:1rem; color:#64748b;'> %</span></h3></div>", unsafe_allow_html=True)
                 st.markdown("</div>", unsafe_allow_html=True)
 
-                # 블록 2: 추천 공정 사양 패널 (FANCY 에메랄드 카드 스타일)
                 st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
                 st.markdown("<div class='glass-card-title' style='color:#10b981;'>💡 Recommended AI Process Optimization Specs</div>", unsafe_allow_html=True)
                 
-                # 변수가 동적으로 늘어나도 가변적으로 대응하도록 컬럼 배열 최적화
                 c_cols = st.columns(3)
                 with c_cols[0]:
                     st.markdown(f"<div style='border-radius:6px; border-left:4px solid #10b981; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.85rem; font-weight:600;'>Caulking Distance Guide</span><h3 style='color:#ffffff; font-size:1.8rem; margin:2px 0; font-family:JetBrains Mono;'>{opt_x[0]:.2f}<span style='font-size:1rem; color:#64748b;'> mm</span></h3></div>", unsafe_allow_html=True)
@@ -389,7 +387,6 @@ if st.session_state['model_tq']:
                     st.markdown(f"<div style='border-radius:6px; border-left:4px solid #10b981; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.85rem; font-weight:600;'>Aging Status Guide</span><h3 style='color:#ffffff; font-size:1.3rem; margin:7px 0; font-family:Inter; font-weight:700;'>{aging_text}</h3></div>", unsafe_allow_html=True)
                 st.markdown("</div>", unsafe_allow_html=True)
 
-                # Report Export 영역
                 df_excel_data = pd.DataFrame({
                     "KPI Parameters": ["Recommended Caulking Distance (mm)", "Recommended Stud Center (mm)", "Recommended Aging Status", 
                                      "Expected Torque Value (Nm)", "Expected Endurance Life (Cycles)", "Optimization Confidence Score (%)"],
@@ -475,7 +472,6 @@ if st.session_state['model_tq']:
                     st.markdown(f"<div style='border-radius:6px; border-left:4px solid {s_conf_color}; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.85rem; font-weight:600;'>Interpolation Safe Rate</span><h3 style='color:{s_conf_color}; font-size:1.8rem; margin:2px 0; font-family:JetBrains Mono;'>{s_conf:.1f}<span style='font-size:1rem; color:#64748b;'> %</span></h3></div>", unsafe_allow_html=True)
                 st.markdown("</div>", unsafe_allow_html=True)
 
-                # 시뮬레이션 데이터 엑셀 다운로드 파일 빌드
                 ev = st.session_state['sim_executed_vars']
                 df_sim_excel = pd.DataFrame({
                     "Simulation Log Parameters": ["Input Caulking Distance (mm)", "Input Stud Center (mm)", "Input Aging Configuration", "AI Synthesized Torque (Nm)", "AI Synthesized Endurance (Cycles)", "Safe Range Proximity Index (%)"],
@@ -501,6 +497,5 @@ if st.session_state['model_tq']:
         st.dataframe(st.session_state['df_caulking'], use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)
 else:
-    # 데이터 미로드 시의 초기 안내 화면 가이드라인 스타일링
     st.markdown("<br><br>", unsafe_allow_html=True)
     st.info("💡 CORE ENGINE INACTIVE: 좌측 관제 제어반(CONTROL CONSOLE)에서 'JOINT-INPUT' 원천 로그 파일을 로드하신 뒤 엔진 초기화 버튼을 가동해 주십시오.")
