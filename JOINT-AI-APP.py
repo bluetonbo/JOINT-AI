@@ -6,126 +6,95 @@ from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import MinMaxScaler
 from scipy.optimize import minimize
 
-# 1. 페이지 설정: 상용 소프트웨어 스타일의 와이드 레이아웃
+# 1. 페이지 설정
 st.set_page_config(
     layout="wide", 
     page_title="JOINT AI - Process Optimization Suite",
     page_icon="⚡"
 )
 
-# 2. 하이엔드 엔지니어링 콘솔 전용 CSS 스타일링
+# 2. 미니멀 엔지니어링 콘솔 스타일 CSS
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
     
-    /* 베이스 레이아웃 초기화 */
     .stApp {
         background-color: #090d16 !important;
         color: #e2e8f0 !important;
         font-family: 'Inter', sans-serif;
     }
     
-    /* 상용 프로그램 스타일 사이드바 */
     [data-testid="stSidebar"] {
         background-color: #0f1524 !important;
         border-right: 1px solid #1e293b;
         min-width: 360px !important;
     }
     
-    /* 텍스트 스타일 정의 */
     h1, h2, h3, h4 {
         font-family: 'Inter', sans-serif;
-        font-weight: 700 !important;
-        letter-spacing: -0.02em;
+        font-weight: 600 !important;
+        letter-spacing: -0.01em;
     }
     
-    /* 하이엔드 글래스모피즘 카드 컨테이너 */
     .glass-card {
         background: #131b2e;
         border: 1px solid #223154;
-        border-radius: 10px;
+        border-radius: 8px;
         padding: 22px;
         margin-bottom: 20px;
-        box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.25);
     }
     .glass-card-title {
         color: #38bdf8;
-        font-size: 0.95rem;
+        font-size: 0.9rem;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.05em;
         margin-bottom: 15px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
     }
 
-    /* 플랫 디자인 사각 버튼 컨트롤 */
     .stButton>button, .stDownloadButton>button {
-        height: 3.2rem !important;
-        font-size: 1rem !important;
-        border-radius: 6px !important;
+        height: 3rem !important;
+        font-size: 0.95rem !important;
+        border-radius: 4px !important;
         background: #10b981 !important;
         color: #ffffff !important;
-        font-weight: 700;
+        font-weight: 600;
         border: none !important;
-        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.2s ease;
         width: 100%;
     }
     .stButton>button:hover, .stDownloadButton>button:hover {
         background: #059669 !important;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
     }
     
-    /* 중요 실행 버튼 프리미엄 스타일 */
     div.stButton > button[data-testid="baseButton-secondary"] {
         background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
-        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
     }
     div.stButton > button[data-testid="baseButton-secondary"]:hover {
         background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%) !important;
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
     }
 
-    /* 슬라이더 라벨 정의 */
     .stSlider label {
         color: #94a3b8 !important;
-        font-weight: 600 !important;
-        font-size: 0.9rem !important;
+        font-weight: 500 !important;
+        font-size: 0.85rem !important;
         margin-bottom: 4px !important;
     }
     
-    /* 메트릭 스펙 초기화 */
-    [data-testid="stMetric"] {
-        background-color: #131b2e !important;
-        border: 1px solid #223154 !important;
-        padding: 15px !important;
-        border-radius: 8px !important;
-    }
-    [data-testid="stMetricValue"] {
-        color: #ffffff !important;
-        font-family: 'JetBrains Mono', monospace;
-        font-weight: 700;
-    }
-    
-    /* 상단 탭 커스텀 디자인 */
     button[data-baseweb="tab"] {
-        font-size: 1rem !important;
+        font-size: 0.95rem !important;
         font-weight: 600 !important;
-        height: 3.5rem !important;
+        height: 3.2rem !important;
         color: #64748b !important;
         background-color: transparent !important;
         border: none !important;
-        padding: 0 24px !important;
+        padding: 0 20px !important;
     }
     button[data-baseweb="tab"][aria-selected="true"] {
         color: #38bdf8 !important;
-        border-bottom: 3px solid #38bdf8 !important;
+        border-bottom: 2px solid #38bdf8 !important;
     }
     
-    /* 알림창 폰트 가독성 */
     .stAlert {
         background-color: #141f36 !important;
         border: 1px solid #1e293b !important;
@@ -134,7 +103,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 3. 시스템 암호 인증 패널 (오류 사각형 제거 및 완전 사각 매칭)
+# 3. 시스템 암호 인증 패널
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
@@ -144,12 +113,12 @@ if not st.session_state.authenticated:
         st.markdown("<br><br>", unsafe_allow_html=True)
         st.markdown("""
             <div class='glass-card' style='text-align: center; padding: 40px; margin-bottom: 25px;'>
-                <h2 style='color: #10b981; margin-top: 0px; margin-bottom: 5px; font-size: 2rem;'>JOINT PROCESS INTELLIGENCE</h2>
-                <p style='color: #64748b; font-size:0.95rem; margin-bottom: 0px;'>Core AI Optimization Dashboard Terminal</p>
+                <h2 style='color: #10b981; margin-top: 0px; margin-bottom: 5px; font-size: 1.8rem;'>JOINT PROCESS INTELLIGENCE</h2>
+                <p style='color: #64748b; font-size:0.9rem; margin-bottom: 0px;'>Core Optimization Dashboard</p>
             </div>
         """, unsafe_allow_html=True)
         
-        pwd = st.text_input("Enter System Token Password", type="password")
+        pwd = st.text_input("Enter Password", type="password")
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("AUTHENTICATE SYSTEM"):
             if pwd == "admin1234":
@@ -176,12 +145,12 @@ if 'model_tq' not in st.session_state:
         'sim_pred_tq': None, 'sim_pred_ed': None, 'sim_executed_vars': None, 'sim_confidence': None
     })
 
-# 5. 사이드바 - 관제 제어반 (Control Panel)
+# 5. 사이드바 - 제어반
 with st.sidebar:
-    st.markdown("<h2 style='color: #ffffff; font-size:1.3rem; margin-bottom: 20px;'>CONTROL CONSOLE</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color: #ffffff; font-size:1.15rem; margin-bottom: 20px;'>CONTROL CONSOLE</h2>", unsafe_allow_html=True)
     
-    with st.expander("📁 Master Data Stream", expanded=True):
-        u_input = st.file_uploader("Upload Factory Log File (CSV, XLSX)", type=['csv','xlsx'])
+    with st.expander("Master Data Stream", expanded=True):
+        u_input = st.file_uploader("Upload Log File (CSV, XLSX)", type=['csv','xlsx'])
     
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("RUN ENGINE INITIALIZATION", type="primary"):
@@ -210,37 +179,38 @@ with st.sidebar:
             })
             st.rerun()
         else:
-            st.error("Please upload a factory data log file.")
+            st.error("Please upload a data log file.")
 
-# 6. 메인 뷰포트 영역 (Main Dashboard View)
+# 6. 메인 뷰포트 영역
 if st.session_state['model_tq']:
-    # 시스템 헤더
     h_left, h_right = st.columns([2, 1])
     with h_left:
-        st.markdown("<h1 style='margin-bottom:0px; font-size:2.2rem;'>JOINT PROCESS INTELLIGENCE</h1>", unsafe_allow_html=True)
-        st.markdown("<p style='color:#64748b; margin-bottom:25px;'>Real-time Inverse Optimization & Quality Simulation Terminal</p>", unsafe_allow_html=True)
+        st.markdown("<h1 style='margin-bottom:0px; font-size:1.8rem;'>JOINT PROCESS INTELLIGENCE</h1>", unsafe_allow_html=True)
+        st.markdown("<p style='color:#64748b; margin-bottom:25px; font-size:0.9rem;'>Inverse Optimization & Process Simulation Terminal</p>", unsafe_allow_html=True)
     with h_right:
         st.markdown(f"""
             <div style='display:flex; gap:10px; justify-content:flex-end; align-items:center; height:100%; padding-bottom:20px;'>
-                <span style='background:#1e293b; color:#38bdf8; padding:6px 12px; border-radius:4px; font-size:0.8rem; font-weight:700; border:1px solid #334155;'>CORE: ACTIVE</span>
-                <span style='background:#1e293b; color:#10b981; padding:6px 12px; border-radius:4px; font-size:0.8rem; font-weight:700; border:1px solid #334155;'>LOGS: {len(st.session_state['df_caulking'])} Rows</span>
-                <span style='background:#022c22; color:#34d399; padding:6px 12px; border-radius:4px; font-size:0.8rem; font-weight:700; border:1px solid #065f46;'>{st.session_state['optimizer_status']}</span>
+                <span style='background:#1e293b; color:#38bdf8; padding:5px 10px; border-radius:4px; font-size:0.75rem; font-weight:700; border:1px solid #334155;'>CORE: ACTIVE</span>
+                <span style='background:#1e293b; color:#10b981; padding:5px 10px; border-radius:4px; font-size:0.75rem; font-weight:700; border:1px solid #334155;'>LOGS: {len(st.session_state['df_caulking'])} Rows</span>
+                <span style='background:#022c22; color:#34d399; padding:5px 10px; border-radius:4px; font-size:0.75rem; font-weight:700; border:1px solid #065f46;'>{st.session_state['optimizer_status']}</span>
             </div>
         """, unsafe_allow_html=True)
 
-    tab1, tab2, tab3 = st.tabs(["🎯 QUALITY INVERSE TARGETING", "🔬 REAL-TIME WHAT-IF SIMULATOR", "📊 FACTORY DATALAKE LOGS"])
+    tab1, tab2, tab3 = st.tabs(["QUALITY INVERSE TARGETING", "REAL-TIME WHAT-IF SIMULATOR", "FACTORY DATALAKE LOGS"])
 
-    # ------------------ TAB 1: 품질 타겟 추적 솔루션 ------------------
+    # ------------------ TAB 1: 품질 타겟 추적 ------------------
     with tab1:
         layout_l, layout_r = st.columns([1.1, 1.4], gap="large")
         
         with layout_l:
-            st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-            st.markdown("<div class='glass-card-title'>⚙️ Boundary Condition Optimizer</div>", unsafe_allow_html=True)
+            st.markdown("""
+                <div class='glass-card'>
+                    <div class='glass-card-title'>Boundary Condition Optimizer</div>
+            """, unsafe_allow_html=True)
             
             bound_mode = st.radio(
                 "Safety Bound Limit Mode",
-                options=["Auto Mode (Based on History)", "Manual Expert Tuning"],
+                options=["Auto Mode", "Manual Expert Tuning"],
                 index=0, horizontal=True
             )
             
@@ -249,10 +219,10 @@ if st.session_state['model_tq']:
             
             if "Auto Mode" in bound_mode:
                 st.markdown(f"""
-                    <div style='background:#0f172a; padding:15px; border-radius:6px; border:1px solid #1e293b; font-size:0.9rem;'>
-                        <b style='color:#38bdf8;'>[Auto-Bound Enabled]</b><br>
-                        • Caulking Distance (CD): {db['Caulking_Distance'][0]:.2f} ~ {db['Caulking_Distance'][1]:.2f} mm<br>
-                        • Stud Center (SC): {db['Stud_Center'][0]:.2f} ~ {db['Stud_Center'][1]:.2f} mm
+                    <div style='background:#0f172a; padding:15px; border-radius:6px; border:1px solid #1e293b; font-size:0.85rem;'>
+                        <span style='color:#38bdf8; font-weight:600;'>[Auto-Bound Enabled]</span><br>
+                        • Caulking Distance: {db['Caulking_Distance'][0]:.2f} ~ {db['Caulking_Distance'][1]:.2f} mm<br>
+                        • Stud Center: {db['Stud_Center'][0]:.2f} ~ {db['Stud_Center'][1]:.2f} mm
                     </div>
                 """, unsafe_allow_html=True)
                 chosen_bounds = {
@@ -278,8 +248,10 @@ if st.session_state['model_tq']:
                 }
             st.markdown("</div>", unsafe_allow_html=True)
 
-            st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-            st.markdown("<div class='glass-card-title'>🎯 Target Quality KPIs Range</div>", unsafe_allow_html=True)
+            st.markdown("""
+                <div class='glass-card'>
+                    <div class='glass-card-title'>Target Quality KPIs Range</div>
+            """, unsafe_allow_html=True)
             
             st.session_state['target_tq_range'] = st.slider(
                 "Target Torque Metric (Nm)",
@@ -360,31 +332,35 @@ if st.session_state['model_tq']:
         with layout_r:
             if st.session_state['opt_result_x'] is not None:
                 opt_x = st.session_state['opt_result_x']
-                aging_text = "Aged (에이징 적용)" if round(opt_x[2]) == 1 else "Unaged"
+                aging_text = "Aged" if round(opt_x[2]) == 1 else "Unaged"
                 
-                st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-                st.markdown("<div class='glass-card-title' style='color:#3b82f6;'>📊 Predicted Quality Performance & Model Confidence</div>", unsafe_allow_html=True)
+                st.markdown("""
+                    <div class='glass-card'>
+                        <div class='glass-card-title' style='color:#3b82f6;'>Predicted Performance & Confidence</div>
+                """, unsafe_allow_html=True)
                 
                 r_col1, r_col2, r_col3 = st.columns(3)
                 with r_col1:
-                    st.markdown(f"<div style='border-radius:6px; border-left:4px solid #3b82f6; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.85rem; font-weight:600;'>Predicted Torque</span><h3 style='color:#ffffff; font-size:1.8rem; margin:2px 0; font-family:JetBrains Mono;'>{st.session_state['opt_pred_tq']:.2f}<span style='font-size:1rem; color:#64748b;'> Nm</span></h3></div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='border-radius:4px; border-left:3px solid #3b82f6; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.8rem; font-weight:600;'>Predicted Torque</span><h3 style='color:#ffffff; font-size:1.6rem; margin:2px 0; font-family:JetBrains Mono;'>{st.session_state['opt_pred_tq']:.2f}<span style='font-size:0.85rem; color:#64748b;'> Nm</span></h3></div>", unsafe_allow_html=True)
                 with r_col2:
-                    st.markdown(f"<div style='border-radius:6px; border-left:4px solid #3b82f6; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.85rem; font-weight:600;'>Predicted Endurance</span><h3 style='color:#ffffff; font-size:1.8rem; margin:2px 0; font-family:JetBrains Mono;'>{st.session_state['opt_pred_ed']:,.0f}<span style='font-size:1rem; color:#64748b;'> Cyc</span></h3></div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='border-radius:4px; border-left:3px solid #3b82f6; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.8rem; font-weight:600;'>Predicted Endurance</span><h3 style='color:#ffffff; font-size:1.6rem; margin:2px 0; font-family:JetBrains Mono;'>{st.session_state['opt_pred_ed']:,.0f}<span style='font-size:0.85rem; color:#64748b;'> Cyc</span></h3></div>", unsafe_allow_html=True)
                 with r_col3:
                     conf_color = "#10b981" if st.session_state['confidence_score'] >= 80.0 else "#ef4444"
-                    st.markdown(f"<div style='border-radius:6px; border-left:4px solid {conf_color}; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.85rem; font-weight:600;'>Target Confidence</span><h3 style='color:{conf_color}; font-size:1.8rem; margin:2px 0; font-family:JetBrains Mono;'>{st.session_state['confidence_score']:.1f}<span style='font-size:1rem; color:#64748b;'> %</span></h3></div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='border-radius:4px; border-left:3px solid {conf_color}; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.8rem; font-weight:600;'>Target Confidence</span><h3 style='color:{conf_color}; font-size:1.6rem; margin:2px 0; font-family:JetBrains Mono;'>{st.session_state['confidence_score']:.1f}<span style='font-size:0.85rem; color:#64748b;'> %</span></h3></div>", unsafe_allow_html=True)
                 st.markdown("</div>", unsafe_allow_html=True)
 
-                st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-                st.markdown("<div class='glass-card-title' style='color:#10b981;'>💡 Recommended AI Process Optimization Specs</div>", unsafe_allow_html=True)
+                st.markdown("""
+                    <div class='glass-card'>
+                        <div class='glass-card-title' style='color:#10b981;'>Recommended Process Specifications</div>
+                """, unsafe_allow_html=True)
                 
                 c_cols = st.columns(3)
                 with c_cols[0]:
-                    st.markdown(f"<div style='border-radius:6px; border-left:4px solid #10b981; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.85rem; font-weight:600;'>Caulking Distance Guide</span><h3 style='color:#ffffff; font-size:1.8rem; margin:2px 0; font-family:JetBrains Mono;'>{opt_x[0]:.2f}<span style='font-size:1rem; color:#64748b;'> mm</span></h3></div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='border-radius:4px; border-left:3px solid #10b981; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.8rem; font-weight:600;'>Caulking Distance</span><h3 style='color:#ffffff; font-size:1.6rem; margin:2px 0; font-family:JetBrains Mono;'>{opt_x[0]:.2f}<span style='font-size:0.85rem; color:#64748b;'> mm</span></h3></div>", unsafe_allow_html=True)
                 with c_cols[1]:
-                    st.markdown(f"<div style='border-radius:6px; border-left:4px solid #10b981; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.85rem; font-weight:600;'>Stud Center Guide</span><h3 style='color:#ffffff; font-size:1.8rem; margin:2px 0; font-family:JetBrains Mono;'>{opt_x[1]:.2f}<span style='font-size:1rem; color:#64748b;'> mm</span></h3></div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='border-radius:4px; border-left:3px solid #10b981; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.8rem; font-weight:600;'>Stud Center</span><h3 style='color:#ffffff; font-size:1.6rem; margin:2px 0; font-family:JetBrains Mono;'>{opt_x[1]:.2f}<span style='font-size:0.85rem; color:#64748b;'> mm</span></h3></div>", unsafe_allow_html=True)
                 with c_cols[2]:
-                    st.markdown(f"<div style='border-radius:6px; border-left:4px solid #10b981; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.85rem; font-weight:600;'>Aging Status Guide</span><h3 style='color:#ffffff; font-size:1.3rem; margin:7px 0; font-family:Inter; font-weight:700;'>{aging_text}</h3></div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='border-radius:4px; border-left:3px solid #10b981; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.8rem; font-weight:600;'>Aging Status</span><h3 style='color:#ffffff; font-size:1.3rem; margin:6px 0; font-family:Inter; font-weight:600;'>{aging_text}</h3></div>", unsafe_allow_html=True)
                 st.markdown("</div>", unsafe_allow_html=True)
 
                 df_excel_data = pd.DataFrame({
@@ -394,24 +370,26 @@ if st.session_state['model_tq']:
                 })
                 output = io.BytesIO()
                 with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                    df_excel_data.to_excel(writer, index=False, sheet_name='AI_Optimized_Report')
+                    df_excel_data.to_excel(writer, index=False, sheet_name='Optimization_Report')
                 
                 st.download_button(
-                    label="📥 DOWNLOAD OPTIMIZATION REPORT (.XLSX)",
+                    label="DOWNLOAD OPTIMIZATION REPORT (.XLSX)",
                     data=output.getvalue(),
-                    file_name="JOINT_AI_Optimization_Report.xlsx",
+                    file_name="Process_Optimization_Report.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
             else:
-                st.markdown("<div style='text-align:center; padding:100px 0; color:#475569;'>🎯 Target 인자를 지정하고 왼쪽 하단의 [RUN INVERSE INFERENCE SEARCH] 버튼을 누르시면 최적 솔루션 연산이 이곳에 표시됩니다.</div>", unsafe_allow_html=True)
+                st.markdown("<div style='text-align:center; padding:100px 0; color:#475569; font-size:0.9rem;'>수치 지정 후 하단의 검색 버튼을 클릭하면 최적화 결과가 정렬됩니다.</div>", unsafe_allow_html=True)
 
-    # ------------------ TAB 2: 현장 변수 실시간 시뮬레이터 ------------------
+    # ------------------ TAB 2: 실시간 시뮬레이터 ------------------
     with tab2:
         sim_l, sim_r = st.columns([1.1, 1.4], gap="large")
         
         with sim_l:
-            st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-            st.markdown("<div class='glass-card-title'>🎛️ Real-time Parameter Input Panel</div>", unsafe_allow_html=True)
+            st.markdown("""
+                <div class='glass-card'>
+                    <div class='glass-card-title'>Real-time Parameter Input Panel</div>
+            """, unsafe_allow_html=True)
             
             sim_cb = st.session_state['data_bounds']
             sim_cd = st.slider(
@@ -458,18 +436,20 @@ if st.session_state['model_tq']:
 
         with sim_r:
             if st.session_state['sim_pred_tq'] is not None:
-                st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-                st.markdown("<div class='glass-card-title' style='color:#38bdf8;'>🔮 AI Forward Simulation Outputs</div>", unsafe_allow_html=True)
+                st.markdown("""
+                    <div class='glass-card'>
+                        <div class='glass-card-title' style='color:#38bdf8;'>AI Forward Simulation Outputs</div>
+                """, unsafe_allow_html=True)
                 
                 s_res1, s_res2, s_res3 = st.columns(3)
                 with s_res1:
-                    st.markdown(f"<div style='border-radius:6px; border-left:4px solid #38bdf8; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.85rem; font-weight:600;'>AI Est. Torque</span><h3 style='color:#ffffff; font-size:1.8rem; margin:2px 0; font-family:JetBrains Mono;'>{st.session_state['sim_pred_tq']:.2f}<span style='font-size:1rem; color:#64748b;'> Nm</span></h3></div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='border-radius:4px; border-left:3px solid #38bdf8; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.8rem; font-weight:600;'>AI Est. Torque</span><h3 style='color:#ffffff; font-size:1.6rem; margin:2px 0; font-family:JetBrains Mono;'>{st.session_state['sim_pred_tq']:.2f}<span style='font-size:0.85rem; color:#64748b;'> Nm</span></h3></div>", unsafe_allow_html=True)
                 with s_res2:
-                    st.markdown(f"<div style='border-radius:6px; border-left:4px solid #38bdf8; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.85rem; font-weight:600;'>AI Est. Endurance</span><h3 style='color:#ffffff; font-size:1.8rem; margin:2px 0; font-family:JetBrains Mono;'>{st.session_state['sim_pred_ed']:,.0f}<span style='font-size:1rem; color:#64748b;'> Cyc</span></h3></div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='border-radius:4px; border-left:3px solid #38bdf8; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.8rem; font-weight:600;'>AI Est. Endurance</span><h3 style='color:#ffffff; font-size:1.6rem; margin:2px 0; font-family:JetBrains Mono;'>{st.session_state['sim_pred_ed']:,.0f}<span style='font-size:0.85rem; color:#64748b;'> Cyc</span></h3></div>", unsafe_allow_html=True)
                 with s_res3:
                     s_conf = st.session_state['sim_confidence']
                     s_conf_color = "#10b981" if s_conf >= 80.0 else ("#f59e0b" if s_conf >= 50.0 else "#ef4444")
-                    st.markdown(f"<div style='border-radius:6px; border-left:4px solid {s_conf_color}; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.85rem; font-weight:600;'>Interpolation Safe Rate</span><h3 style='color:{s_conf_color}; font-size:1.8rem; margin:2px 0; font-family:JetBrains Mono;'>{s_conf:.1f}<span style='font-size:1rem; color:#64748b;'> %</span></h3></div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='border-radius:4px; border-left:3px solid {s_conf_color}; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.8rem; font-weight:600;'>Safe Range Index</span><h3 style='color:{s_conf_color}; font-size:1.6rem; margin:2px 0; font-family:JetBrains Mono;'>{s_conf:.1f}<span style='font-size:0.85rem; color:#64748b;'> %</span></h3></div>", unsafe_allow_html=True)
                 st.markdown("</div>", unsafe_allow_html=True)
 
                 ev = st.session_state['sim_executed_vars']
@@ -479,23 +459,25 @@ if st.session_state['model_tq']:
                 })
                 sim_output = io.BytesIO()
                 with pd.ExcelWriter(sim_output, engine='openpyxl') as writer:
-                    df_sim_excel.to_excel(writer, index=False, sheet_name='What_If_Report')
+                    df_sim_excel.to_excel(writer, index=False, sheet_name='Simulation_Report')
                 
                 st.download_button(
-                    label="📥 DOWNLOAD SIMULATION REPORT (.XLSX)",
+                    label="DOWNLOAD SIMULATION REPORT (.XLSX)",
                     data=sim_output.getvalue(),
-                    file_name="JOINT_What_If_Simulation_Report.xlsx",
+                    file_name="Simulation_Report.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
             else:
-                st.markdown("<div style='text-align:center; padding:100px 0; color:#475569;'>🔬 실시간 현장 변수를 임의로 조정한 뒤 [EXECUTE PREDICTIVE SIMULATION] 버튼을 누르시면 예측 결과 카드가 이곳에 정렬됩니다.</div>", unsafe_allow_html=True)
+                st.markdown("<div style='text-align:center; padding:100px 0; color:#475569; font-size:0.9rem;'>변수를 입력한 후 시뮬레이션 실행 버튼을 클릭하면 결과 카드가 정렬됩니다.</div>", unsafe_allow_html=True)
 
-    # ------------------ TAB 3: 코킹 공정 원천 로그 ------------------
+    # ------------------ TAB 3: 공정 로그 데이터레이크 ------------------
     with tab3:
-        st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-        st.markdown("<div class='glass-card-title'>📊 Integrated Central Data Repository Log</div>", unsafe_allow_html=True)
+        st.markdown("""
+            <div class='glass-card'>
+                <div class='glass-card-title'>Central Data Repository Log</div>
+        """, unsafe_allow_html=True)
         st.dataframe(st.session_state['df_caulking'], use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)
 else:
     st.markdown("<br><br>", unsafe_allow_html=True)
-    st.info("💡 CORE ENGINE INACTIVE: 좌측 관제 제어반(CONTROL CONSOLE)에서 'JOINT-INPUT' 원천 로그 파일을 로드하신 뒤 엔진 초기화 버튼을 가동해 주십시오.")
+    st.info("CORE ENGINE INACTIVE: 좌측 CONTROL CONSOLE에서 로그 파일을 로드한 후 가동해 주십시오.")
