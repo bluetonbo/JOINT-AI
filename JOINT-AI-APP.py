@@ -415,7 +415,7 @@ if st.session_state['model_tq']:
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
             else:
-                st.markdown("<div style='text-align:center; padding:100px 0; color:#475569; font-size:0.9rem;'>수치 지정 후 하단의 검색 버튼을 클릭하면 최적화 결과가 정렬됩니다.</div>", unsafe_allow_html=True)
+                st.markdown("<div style='text-align:center; padding:100px 0; color:#475569; font-size:0.9rem;'>"Define your parameters and click the search button below to display the optimization results."</div>", unsafe_allow_html=True)
 
     # ------------------ TAB 2: 실시간 시뮬레이터 ------------------
     with tab2:
