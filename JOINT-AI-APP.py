@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import io
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import MinMaxScaler
 from scipy.optimize import minimize
@@ -32,18 +33,19 @@ st.markdown("""
     }
 
     /* 프로페셔널 사각 플랫 버튼 스타일 (에메랄드 그린 테마) */
-    .stButton>button {
+    .stButton>button, .stDownloadButton>button {
         height: 3.5rem !important;
         font-size: 1.05rem !important;
         border-radius: 6px !important;
-        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
         color: white !important;
         font-weight: 700;
-        border: 1px solid #10b981;
+        border: 1px solid #10b981 !important;
         letter-spacing: 0.5px;
         transition: all 0.3s ease;
+        width: 100%;
     }
-    .stButton>button:hover {
+    .stButton>button:hover, .stDownloadButton>button:hover {
         background: #10b981 !important;
         box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
     }
@@ -186,7 +188,7 @@ if st.session_state['model_tq']:
 
     tab1, tab2, tab3 = st.tabs(["품질 타겟 추적 솔루션", "현장 변수 실시간 시뮬레이터", "코킹 공정 원천 로그"])
 
-    # ------------------ TAB 1: 품질 타겟 추적 솔루션 (기존 기능 좌우반전 레이아웃) ------------------
+    # ------------------ TAB 1: 품질 타겟 추적 솔루션 ------------------
     with tab1:
         col1, col2 = st.columns([1, 1], gap="large")
         
@@ -308,7 +310,30 @@ if st.session_state['model_tq']:
                 conf_color = "#10b981" if st.session_state['confidence_score'] >= 80.0 else "#ef4444"
                 st.markdown(f"<div style='border-radius: 6px; border-left: 6px solid {conf_color}; padding: 20px; background: #1f2937;'><span style='color: #9ca3af; font-size: 0.9rem; font-weight:600;'>품질 조건 만족 범위 신뢰도</span><h2 style='color: #ffffff; font-size: 2.5rem; margin: 5px 0; font-family: JetBrains Mono;'>{st.session_state['confidence_score']:.1f} <span style='font-size:1.2rem; color:{conf_color};'>%</span></h2></div>", unsafe_allow_html=True)
 
-    # ------------------ TAB 2: [신규 추가] 현장 변수 실시간 시뮬레이터 (What-If Analysis) ------------------
+            # --- [신규 추가] 엑셀 데이터 빌드 및 다운로드 연동 부 ---
+            st.markdown("<br>", unsafe_allow_html=True)
+            df_excel_data = pd.DataFrame({
+                "구분 항목": ["추천 코킹 거리 (Caulking_Distance)", "추천 스터드 센터 (Stud_Center)", "추천 에이징 여부 (Aging_Status)", 
+                             "예상 토크 값 (Torque)", "예상 내구 수명 (Endurance)", "예측 결과 신뢰도 (Confidence)"],
+                "AI 도출 사양 및 가치": [f"{opt_x[0]:.2f} mm", f"{opt_x[1]:.2f} mm", aging_text, 
+                                     f"{st.session_state['opt_pred_tq']:.2f} Nm", f"{st.session_state['opt_pred_ed']:,.0f} Cycles", f"{st.session_state['confidence_score']:.1f} %"]
+            })
+            
+            # 메모리 버퍼 상에 엑셀 이진 파일 동적 빌드
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                df_excel_data.to_excel(writer, index=False, sheet_name='AI_Optimization_Result')
+            processed_data = output.getvalue()
+            
+            # 스트림릿 다운로드 컴포넌트 마운트
+            st.download_button(
+                label="최적 추적 공정 결과 엑셀 파일(.xlsx) 다운로드",
+                data=processed_data,
+                file_name="Caulking_AI_Optimization_Report.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+
+    # ------------------ TAB 2: 현장 변수 실시간 시뮬레이터 ------------------
     with tab2:
         st.markdown("<h4 style='color:#e5e7eb; margin-bottom:15px;'>현장 실시간 공정 조건 입력 패널</h4>", unsafe_allow_html=True)
         st.info("현재 현장 설비에 셋팅된 공정 변수값을 슬라이더로 변경해 보세요. 학습된 AI 모델이 토크와 내구성을 즉시 실시간 계산합니다.")
@@ -317,7 +342,6 @@ if st.session_state['model_tq']:
         
         sim_col1, sim_col2 = st.columns([1, 1], gap="large")
         with sim_col1:
-            # 1. 코킹 거리 제어 컴포넌트
             sim_cd = st.slider(
                 "현장 코킹 거리 입력 (Caulking_Distance, mm)",
                 min_value=float(round(cb['Caulking_Distance'][0], 2)),
@@ -325,7 +349,6 @@ if st.session_state['model_tq']:
                 value=float(round((cb['Caulking_Distance'][0] + cb['Caulking_Distance'][1])/2, 2)),
                 step=0.01
             )
-            # 2. 스터드 센터 제어 컴포넌트
             sim_sc = st.slider(
                 "현장 스터드 센터 입력 (Stud_Center, mm)",
                 min_value=float(round(cb['Stud_Center'][0], 2)),
@@ -335,7 +358,6 @@ if st.session_state['model_tq']:
             )
         
         with sim_col2:
-            # 3. 에이징 상태 제어 라디오 컴포넌트
             sim_ag_label = st.radio(
                 "현장 에이징 처리 상태 여부 선택 (Aging_Status)",
                 options=["Unaged (미적용 - 0)", "Aged (에이징 적용 - 1)"],
@@ -345,7 +367,6 @@ if st.session_state['model_tq']:
             
             st.markdown("<div style='margin-top: 25px; padding: 15px; background-color: #111827; border-radius: 6px; border: 1px solid #1f2937;'><span style='color:#10b981; font-weight:700;'>AI 연동 연산 방식:</span><br>업로드된 마스터 데이터의 독립인자 구조를 정규화(MinMax Scaling)한 후, 기 구축된 독립 가중치 계수를 다중 선형 회귀식에 대입하여 0.01초 내에 실시간 예측 연산을 완수합니다.</div>", unsafe_allow_html=True)
 
-        # 수동 변경 즉시 AI 예측 수행 (따로 버튼을 안 눌러도 슬라이더 변경 즉시 반영됨)
         X_vars = st.session_state['process_vars']
         df_sim_query = pd.DataFrame([[sim_cd, sim_sc, sim_ag]], columns=X_vars)
         scaled_sim_query = st.session_state['scaler'].transform(df_sim_query)
@@ -353,7 +374,6 @@ if st.session_state['model_tq']:
         sim_pred_tq = st.session_state['model_tq'].predict(scaled_sim_query)[0]
         sim_pred_ed = st.session_state['model_ed'].predict(scaled_sim_query)[0]
         
-        # 실시간 예측 데이터 모니터링 카드 시각화
         st.markdown("<h3 style='color:#ffffff; margin-top: 30px;'>입력된 조건에 대한 AI 실시간 품질 예측 결과</h3>", unsafe_allow_html=True)
         s_res1, s_res2 = st.columns(2)
         with s_res1:
@@ -370,6 +390,25 @@ if st.session_state['model_tq']:
                     <h2 style='color: #ffffff; font-size: 3rem; margin: 5px 0; font-family: JetBrains Mono;'>{sim_pred_ed:,.0f} <span style='font-size:1.4rem; color:#3b82f6;'>Cycles</span></h2>
                 </div>
             """, unsafe_allow_html=True)
+
+        # --- [신규 추가] 시뮬레이터 결과 엑셀 다운로드 부 ---
+        st.markdown("<br>", unsafe_allow_html=True)
+        df_sim_excel = pd.DataFrame({
+            "시뮬레이션 입력 항목": ["입력 코킹 거리 (Caulking_Distance)", "입력 스터드 센터 (Stud_Center)", "입력 에이징 상태 (Aging_Status)", "AI 예측 토크 (Torque)", "AI 예측 내구 수명 (Endurance)"],
+            "엔지니어 설정값 및 품질 예측치": [f"{sim_cd:.2f} mm", f"{sim_sc:.2f} mm", "Aged (에이징)" if sim_ag == 1 else "Unaged (미적용)", f"{sim_pred_tq:.2f} Nm", f"{sim_pred_ed:,.0f} Cycles"]
+        })
+        
+        sim_output = io.BytesIO()
+        with pd.ExcelWriter(sim_output, engine='openpyxl') as writer:
+            df_sim_excel.to_excel(writer, index=False, sheet_name='What_If_Simulation_Result')
+        sim_processed_data = sim_output.getvalue()
+        
+        st.download_button(
+            label="현장 실시간 시뮬레이션 결과 엑셀 파일(.xlsx) 다운로드",
+            data=sim_processed_data,
+            file_name="Caulking_What_If_Simulation_Report.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 
     # ------------------ TAB 3: 코킹 공정 원천 로그 ------------------
     with tab3:
