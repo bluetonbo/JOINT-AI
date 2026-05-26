@@ -124,7 +124,7 @@ if not st.session_state.authenticated:
                 st.rerun()
     st.stop()
 
-# 4. 세션 데이터 구조 초기화 (목표 범위 매커니즘 반영)
+# 4. 세션 데이터 구조 초기화
 if 'model_tq' not in st.session_state:
     st.session_state.update({
         'model_tq': None, 'model_ed': None, 'scaler': None, 'df_caulking': pd.DataFrame(),
@@ -248,20 +248,18 @@ if st.session_state['model_tq']:
                 
                 return tq_loss + ed_loss
 
-            # 최적화 알고리즘 구동 (두 가지 Aging 상태 0과 1 각각에 대해 최적화 진행 후 가장 우수한 조건 선택)
+            # 두 가지 Aging 상태 0과 1 각각에 대해 최적화 진행 후 가장 우수한 조건 선택
             best_score = float('inf')
             best_res = None
             
             bounds_list = [st.session_state['global_bounds'].get(v, (0.0, 10.0)) for v in X_vars]
             
             for ag_option in [0, 1]:
-                # 초기 추정값 설정 (중앙값 기준)
                 init_guess = [
                     (bounds_list[0][0] + bounds_list[0][1]) / 2.0,
                     (bounds_list[1][0] + bounds_list[1][1]) / 2.0,
                     ag_option
                 ]
-                # Aging_Status는 고정시키고 CD, SC 바운더리 적용
                 current_bounds = [(bounds_list[0][0], bounds_list[0][1]), (bounds_list[1][0], bounds_list[1][1]), (ag_option, ag_option)]
                 
                 res = minimize(target_loss_function, init_guess, method='SLSQP', bounds=current_bounds)
@@ -281,7 +279,6 @@ if st.session_state['model_tq']:
                 st.session_state['opt_pred_ed'] = st.session_state['model_ed'].predict(scaled_opt)[0]
             else:
                 st.session_state['optimizer_status'] = "Range Out / Approximation"
-                # 완벽 일치는 안 되더라도 가장 근접한 조건 도출
                 opt_x = best_res.x
                 df_opt_x = pd.DataFrame([opt_x], columns=X_vars)
                 scaled_opt = st.session_state['scaler'].transform(df_opt_x)
@@ -291,7 +288,7 @@ if st.session_state['model_tq']:
             
             st.rerun()
 
-        # 결과 리포트 출력 영역
+        # 결과 리포트 출력 영역 (ValueError 완전 수정 완료)
         if st.session_state['opt_result_x'] is not None:
             st.markdown("<h3 style='color:#ffffff; margin-top: 25px;'>📊 AI 분석 기반 역산 도출 결과</h3>", unsafe_allow_html=True)
             
@@ -315,10 +312,11 @@ if st.session_state['model_tq']:
                     </div>
                 """, unsafe_allow_html=True)
             with r_col2:
+                # [Fix] 콜론과 콤마 순서를 바로잡아 내부 에러를 차단했습니다.
                 st.markdown(f"""
                     <div style='border-radius: 6px; border-left: 6px solid #3b82f6; padding: 20px; background: #1f2937;'>
                         <span style='color: #9ca3af; font-size: 0.9rem; font-weight:600;'>해당 조건 세팅 시 예상 내구 수명</span>
-                        <h2 style='color: #ffffff; font-size: 2.5rem; margin: 5px 0; font-family: JetBrains Mono;'>{st.session_state['opt_pred_ed']:,:.0f} <span style='font-size:1.2rem; color:#3b82f6;'>Cycles</span></h2>
+                        <h2 style='color: #ffffff; font-size: 2.5rem; margin: 5px 0; font-family: JetBrains Mono;'>{st.session_state['opt_pred_ed']:,.0f} <span style='font-size:1.2rem; color:#3b82f6;'>Cycles</span></h2>
                     </div>
                 """, unsafe_allow_html=True)
 
