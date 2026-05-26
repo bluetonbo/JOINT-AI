@@ -13,10 +13,10 @@ st.set_page_config(
     page_icon="⚡"
 )
 
-# 2. 미니멀 엔지니어링 콘솔 스타일 CSS (사각형 박스 슬림 최적화 반영)
+# 2. 미니멀 엔지니어링 콘솔 스타일 CSS (박스 글자 크기 밀착 극대화)
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght=400;500;700&family=Inter:wght=400;500;600;700&display=swap');
     
     .stApp {
         background-color: #090d16 !important;
@@ -36,24 +36,27 @@ st.markdown("""
         letter-spacing: -0.01em;
     }
     
-    /* 대 타이틀 및 레이블 사각형 상자를 글자 크기에 맞춰 슬림하게 축소 */
+    /* [핵심 수정] 사각형 상자가 화면을 채우지 않고 글자 길이에 딱 맞게 늘어나도록 변경 */
     .glass-card {
         background: #131b2e;
         border: 1px solid #223154;
-        border-radius: 6px;
-        padding: 12px 16px; /* 위아래 패딩을 대폭 줄여 글자에 박스를 밀착 */
-        margin-bottom: 12px; /* 컴포넌트 간 간격 최적화 */
+        border-radius: 4px;
+        display: inline-block; /* 부모 너비 전체를 채우지 않고 콘텐츠 크기에 맞춤 */
+        padding: 6px 12px;     /* 위아래 패딩을 타이트하게 6px로 축소 */
+        margin-bottom: 12px;
+        width: auto;           /* 글자 길이에 종속되도록 고정 */
     }
     
-    /* 박스 내부 타이틀 텍스트 여백 제거 */
+    /* 박스 내부 타이틀 텍스트 공백 최소화 */
     .glass-card-title {
         color: #38bdf8;
         font-size: 0.85rem;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.04em;
-        margin-bottom: 0px; /* 내부 공백을 제로화하여 박스가 비대해지는 것 방지 */
-        padding: 2px 0;
+        margin-bottom: 0px !important;
+        padding: 0px !important;
+        display: inline-block;
     }
 
     .stButton>button, .stDownloadButton>button {
@@ -117,13 +120,13 @@ if not st.session_state.authenticated:
     with center:
         st.markdown("<br><br>", unsafe_allow_html=True)
         st.markdown("""
-            <div class='glass-card' style='text-align: center; padding: 40px; margin-bottom: 25px;'>
+            <div class='glass-card' style='text-align: center; padding: 30px; margin-bottom: 25px; display: block; width: 100%;'>
                 <h2 style='color: #10b981; margin-top: 0px; margin-bottom: 5px; font-size: 1.8rem;'>JOINT PROCESS INTELLIGENCE</h2>
                 <p style='color: #64748b; font-size:0.9rem; margin-bottom: 0px;'>Core Optimization Dashboard</p>
             </div>
         """, unsafe_allow_html=True)
         
-        pwd = st.text_input("Enter Password", type="password")
+        pwd = st.text_input("Enter System Token Password", type="password")
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("AUTHENTICATE SYSTEM"):
             if pwd == "admin1234":
@@ -222,6 +225,7 @@ if st.session_state['model_tq']:
             st.markdown("""
                 <div class='glass-card'>
                     <div class='glass-card-title'>Boundary Condition Optimizer</div>
+                </div>
             """, unsafe_allow_html=True)
             
             bound_mode = st.radio(
@@ -235,7 +239,7 @@ if st.session_state['model_tq']:
             
             if "Auto Mode" in bound_mode:
                 st.markdown(f"""
-                    <div style='background:#0f172a; padding:15px; border-radius:6px; border:1px solid #1e293b; font-size:0.85rem;'>
+                    <div style='background:#0f172a; padding:15px; border-radius:6px; border:1px solid #1e293b; font-size:0.85rem; margin-bottom:15px;'>
                         <span style='color:#38bdf8; font-weight:600;'>[Auto-Bound Enabled]</span><br>
                         • Caulking Distance: {db['Caulking_Distance'][0]:.2f} ~ {db['Caulking_Distance'][1]:.2f} mm<br>
                         • Stud Center: {db['Stud_Center'][0]:.2f} ~ {db['Stud_Center'][1]:.2f} mm
@@ -260,7 +264,7 @@ if st.session_state['model_tq']:
                 sc_s_col, sc_n1, sc_n2 = st.columns([2, 1, 1])
                 with sc_n1:
                     st.session_state['m_sc_min'] = st.number_input("SC Min Input", min_value=0.0, max_value=10.0, value=st.session_state['m_sc_min'], step=0.05, format="%.2f", label_visibility="collapsed")
-                with sc_n2:
+                with cd_n2:
                     st.session_state['m_sc_max'] = st.number_input("SC Max Input", min_value=0.0, max_value=10.0, value=st.session_state['m_sc_max'], step=0.05, format="%.2f", label_visibility="collapsed")
                 with sc_s_col:
                     sc_slider_val = st.slider("SC Range Slider", min_value=0.0, max_value=10.0, value=(st.session_state['m_sc_min'], st.session_state['m_sc_max']), step=0.05, label_visibility="collapsed")
@@ -270,11 +274,11 @@ if st.session_state['model_tq']:
                     'Caulking_Distance': (st.session_state['m_cd_min'], st.session_state['m_cd_max']),
                     'Stud_Center': (st.session_state['m_sc_min'], st.session_state['m_sc_max'])
                 }
-            st.markdown("</div>", unsafe_allow_html=True)
 
             st.markdown("""
                 <div class='glass-card'>
                     <div class='glass-card-title'>Target Quality KPIs Range</div>
+                </div>
             """, unsafe_allow_html=True)
             
             st.markdown("<span style='font-size:0.85rem; font-weight:500; color:#cbd5e1;'>Target Torque Metric (Nm)</span>", unsafe_allow_html=True)
@@ -300,8 +304,7 @@ if st.session_state['model_tq']:
             st.session_state['target_tq_range'] = (st.session_state['t_tq_min'], st.session_state['t_tq_max'])
             st.session_state['target_ed_range'] = (float(st.session_state['t_ed_min']), float(st.session_state['t_ed_max']))
             
-            st.markdown("</div>", unsafe_allow_html=True)
-            
+            st.markdown("<br>", unsafe_allow_html=True)
             if st.button("RUN INVERSE INFERENCE SEARCH", type="secondary", use_container_width=True):
                 X_vars = st.session_state['process_vars']
                 
@@ -373,6 +376,7 @@ if st.session_state['model_tq']:
                 st.markdown("""
                     <div class='glass-card'>
                         <div class='glass-card-title' style='color:#3b82f6;'>Predicted Performance & Confidence</div>
+                    </div>
                 """, unsafe_allow_html=True)
                 
                 r_col1, r_col2, r_col3 = st.columns(3)
@@ -383,11 +387,12 @@ if st.session_state['model_tq']:
                 with r_col3:
                     conf_color = "#10b981" if st.session_state['confidence_score'] >= 80.0 else "#ef4444"
                     st.markdown(f"<div style='border-radius:4px; border-left:3px solid {conf_color}; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.8rem; font-weight:600;'>Target Confidence</span><h3 style='color:{conf_color}; font-size:1.6rem; margin:2px 0; font-family:JetBrains Mono;'>{st.session_state['confidence_score']:.1f}<span style='font-size:0.85rem; color:#64748b;'> %</span></h3></div>", unsafe_allow_html=True)
-                st.markdown("</div>", unsafe_allow_html=True)
-
+                
+                st.markdown("<br>", unsafe_allow_html=True)
                 st.markdown("""
                     <div class='glass-card'>
                         <div class='glass-card-title' style='color:#10b981;'>Recommended Process Specifications</div>
+                    </div>
                 """, unsafe_allow_html=True)
                 
                 c_cols = st.columns(3)
@@ -397,8 +402,8 @@ if st.session_state['model_tq']:
                     st.markdown(f"<div style='border-radius:4px; border-left:3px solid #10b981; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.8rem; font-weight:600;'>Stud Center</span><h3 style='color:#ffffff; font-size:1.6rem; margin:2px 0; font-family:JetBrains Mono;'>{opt_x[1]:.2f}<span style='font-size:0.85rem; color:#64748b;'> mm</span></h3></div>", unsafe_allow_html=True)
                 with c_cols[2]:
                     st.markdown(f"<div style='border-radius:4px; border-left:3px solid #10b981; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.8rem; font-weight:600;'>Aging Status</span><h3 style='color:#ffffff; font-size:1.3rem; margin:6px 0; font-family:Inter; font-weight:600;'>{aging_text}</h3></div>", unsafe_allow_html=True)
-                st.markdown("</div>", unsafe_allow_html=True)
-
+                
+                st.markdown("<br>", unsafe_allow_html=True)
                 df_excel_data = pd.DataFrame({
                     "KPI Parameters": ["Recommended Caulking Distance (mm)", "Recommended Stud Center (mm)", "Recommended Aging Status", 
                                      "Expected Torque Value (Nm)", "Expected Endurance Life (Cycles)", "Optimization Confidence Score (%)"],
@@ -425,9 +430,11 @@ if st.session_state['model_tq']:
             st.markdown("""
                 <div class='glass-card'>
                     <div class='glass-card-title'>Real-time Parameter Input Panel</div>
+                </div>
             """, unsafe_allow_html=True)
             
             sim_cb = st.session_state['data_bounds']
+            st.markdown("<br>", unsafe_allow_html=True)
             
             st.markdown("<span style='font-size:0.85rem; font-weight:500; color:#cbd5e1;'>Live Field Caulking Distance (mm)</span>", unsafe_allow_html=True)
             scd_col1, scd_col2 = st.columns([2, 1])
@@ -448,8 +455,8 @@ if st.session_state['model_tq']:
                 options=["Unaged (Status: 0)", "Aged (Status: 1)"], index=0
             )
             sim_ag = 1 if "Aged" in sim_ag_label else 0
-            st.markdown("</div>", unsafe_allow_html=True)
             
+            st.markdown("<br>", unsafe_allow_html=True)
             if st.button("EXECUTE PREDICTIVE SIMULATION", type="secondary", use_container_width=True):
                 X_vars = st.session_state['process_vars']
                 df_sim_query = pd.DataFrame([[st.session_state['sim_cd'], st.session_state['sim_sc'], sim_ag]], columns=X_vars)
@@ -480,6 +487,7 @@ if st.session_state['model_tq']:
                 st.markdown("""
                     <div class='glass-card'>
                         <div class='glass-card-title' style='color:#38bdf8;'>AI Forward Simulation Outputs</div>
+                    </div>
                 """, unsafe_allow_html=True)
                 
                 s_res1, s_res2, s_res3 = st.columns(3)
@@ -491,8 +499,8 @@ if st.session_state['model_tq']:
                     s_conf = st.session_state['sim_confidence']
                     s_conf_color = "#10b981" if s_conf >= 80.0 else ("#f59e0b" if s_conf >= 50.0 else "#ef4444")
                     st.markdown(f"<div style='border-radius:4px; border-left:3px solid {s_conf_color}; padding:12px; background:#0f172a;'><span style='color:#64748b; font-size:0.8rem; font-weight:600;'>Safe Range Index</span><h3 style='color:{s_conf_color}; font-size:1.6rem; margin:2px 0; font-family:JetBrains Mono;'>{s_conf:.1f}<span style='font-size:0.85rem; color:#64748b;'> %</span></h3></div>", unsafe_allow_html=True)
-                st.markdown("</div>", unsafe_allow_html=True)
-
+                
+                st.markdown("<br>", unsafe_allow_html=True)
                 ev = st.session_state['sim_executed_vars']
                 df_sim_excel = pd.DataFrame({
                     "Simulation Log Parameters": ["Input Caulking Distance (mm)", "Input Stud Center (mm)", "Input Aging Configuration", "AI Synthesized Torque (Nm)", "AI Synthesized Endurance (Cycles)", "Safe Range Proximity Index (%)"],
@@ -514,11 +522,11 @@ if st.session_state['model_tq']:
     # ------------------ TAB 3: 공정 로그 데이터레이크 ------------------
     with tab3:
         st.markdown("""
-            <div class='glass-card'>
+            <div class='glass-card' style='display: block; width: 100%;'>
                 <div class='glass-card-title'>Central Data Repository Log</div>
+            </div>
         """, unsafe_allow_html=True)
         st.dataframe(st.session_state['df_caulking'], use_container_width=True)
-        st.markdown("</div>", unsafe_allow_html=True)
 else:
     st.markdown("<br><br>", unsafe_allow_html=True)
     st.info("CORE ENGINE INACTIVE: 좌측 CONTROL CONSOLE에서 로그 파일을 로드한 후 가동해 주십시오.")
