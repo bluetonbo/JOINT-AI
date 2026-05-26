@@ -131,7 +131,7 @@ if 'model_tq' not in st.session_state:
     st.session_state.update({
         'model_tq': None, 'model_ed': None, 'scaler': None, 'df_caulking': pd.DataFrame(),
         'process_vars': ['Caulking_Distance', 'Stud_Center', 'Aging_Status'],
-        'global_bounds': {
+        'data_bounds': {  # 데이터에서 추출한 원천 경계선 값 저장용
             'Caulking_Distance': (4.0, 7.0),
             'Stud_Center': (1.5, 3.5),
             'Aging_Status': (0, 1)
@@ -147,11 +147,9 @@ if 'model_tq' not in st.session_state:
 with st.sidebar:
     st.markdown("<h3 style='color: #10b981; font-family: JetBrains Mono;'>DATA MANAGEMENT</h3>", unsafe_allow_html=True)
     
-    # [수정] 공정 데이터 자산 로드 -> 공정 데이터 로드
     with st.expander("공정 데이터 로드", expanded=True):
         u_input = st.file_uploader("JOINT-INPUT 데이터 업로드 (CSV, XLSX)", type=['csv','xlsx'])
     
-    # [수정] AI 엔진 및 모델 최적화 가동 -> AI 엔진 및 공정 최적화 실행
     if st.button("AI 엔진 및 공정 최적화 실행", type="primary"):
         if u_input:
             def load_data(f):
@@ -170,7 +168,7 @@ with st.sidebar:
             st.session_state.update({
                 'model_tq': model_tq, 'model_ed': model_ed, 'scaler': scaler, 'df_caulking': df_comb,
                 'optimizer_status': "Engine Ready",
-                'global_bounds': {
+                'data_bounds': {
                     'Caulking_Distance': (float(df_comb['Caulking_Distance'].min()), float(df_comb['Caulking_Distance'].max())),
                     'Stud_Center': (float(df_comb['Stud_Center'].min()), float(df_comb['Stud_Center'].max())),
                     'Aging_Status': (0, 1)
@@ -182,7 +180,6 @@ with st.sidebar:
 
 # 6. 메인 통합 관제 대시보드
 if st.session_state['model_tq']:
-    # [수정] Caulking Target Condition Finder -> Optimization Conditions of Joint
     st.markdown("<h1>Optimization Conditions <span style='color:#10b981; font-family:JetBrains Mono;'>of Joint</span></h1>", unsafe_allow_html=True)
     
     # 상단 모니터링 메트릭 영역
@@ -198,14 +195,48 @@ if st.session_state['model_tq']:
         col1, col2 = st.columns([1, 1], gap="large")
         
         with col1:
-            st.markdown("<h4 style='color:#e5e7eb; margin-bottom:15px;'>공정 탐색 알고리즘 경계 조건</h4>", unsafe_allow_html=True)
-            st.info("AI 엔진이 설비 고장을 방지하기 위해 데이터 분석 기반 안전 한계선 내에서 공정 변수(CD, SC)의 최적 조합을 탐색합니다.")
+            st.markdown("<h4 style='color:#e5e7eb; margin-bottom:15px;'>공정 탐색 알고리즘 경계 조건 설정</h4>", unsafe_allow_html=True)
             
-            cb = st.session_state['global_bounds']
-            st.markdown(f"""
-            * **코킹 거리(CD) 탐색 영역:** {cb['Caulking_Distance'][0]:.2f} mm ~ {cb['Caulking_Distance'][1]:.2f} mm
-            * **스터드 센터(SC) 탐색 영역:** {cb['Stud_Center'][0]:.2f} mm ~ {cb['Stud_Center'][1]:.2f} mm
-            """)
+            # [추가] 사용자가 자동/수동 경계 조건을 직접 선택하는 옵션 패널
+            bound_mode = st.radio(
+                "안전 한계선 설정 모드 선택",
+                options=["자동 모드 (업로드 데이터 기준)", "수동 모드 (엔지니어 직접 지정)"],
+                index=0,
+                horizontal=True
+            )
+            
+            db = st.session_state['data_bounds']
+            
+            if "자동 모드" in bound_mode:
+                st.info("선택 모드: [자동] 업로드된 마스터 데이터의 실제 공정 범위를 안전 한계선으로 고정 적용합니다.")
+                chosen_bounds = {
+                    'Caulking_Distance': db['Caulking_Distance'],
+                    'Stud_Center': db['Stud_Center']
+                }
+                st.markdown(f"""
+                * **지정된 코킹 거리(CD) 영역:** {chosen_bounds['Caulking_Distance'][0]:.2f} mm ~ {chosen_bounds['Caulking_Distance'][1]:.2f} mm
+                * **지정된 스터드 센터(SC) 영역:** {chosen_bounds['Stud_Center'][0]:.2f} mm ~ {chosen_bounds['Stud_Center'][1]:.2f} mm
+                """)
+            else:
+                st.warning("선택 모드: [수동] 설비 보호 및 공정 목적에 맞게 안전 한계치 한계 영역을 직접 튜닝합니다.")
+                
+                # 수동 모드일 때 엔지니어가 직접 범위를 제어하는 슬라이더 노출
+                manual_cd = st.slider(
+                    "수동 코킹 거리 한계 범위 지정 (CD, mm)",
+                    min_value=0.0, max_value=15.0,
+                    value=(float(round(db['Caulking_Distance'][0], 2)), float(round(db['Caulking_Distance'][1], 2))),
+                    step=0.05
+                )
+                manual_sc = st.slider(
+                    "수동 스터드 센터 한계 범위 지정 (SC, mm)",
+                    min_value=0.0, max_value=10.0,
+                    value=(float(round(db['Stud_Center'][0], 2)), float(round(db['Stud_Center'][1], 2))),
+                    step=0.05
+                )
+                chosen_bounds = {
+                    'Caulking_Distance': manual_cd,
+                    'Stud_Center': manual_sc
+                }
 
         with col2:
             st.markdown("<h4 style='color:#e5e7eb; margin-bottom:15px;'>요구 품질 목표 범위 지정 (Target Quality)</h4>", unsafe_allow_html=True)
@@ -248,7 +279,13 @@ if st.session_state['model_tq']:
 
             best_score = float('inf')
             best_res = None
-            bounds_list = [st.session_state['global_bounds'].get(v, (0.0, 10.0)) for v in X_vars]
+            
+            # 사용자가 선택한 모드(chosen_bounds)를 기반으로 바운더리 셋업
+            bounds_list = [
+                chosen_bounds['Caulking_Distance'],
+                chosen_bounds['Stud_Center'],
+                (0, 1) # Aging_Status
+            ]
             
             for ag_option in [0, 1]:
                 init_guess = [
@@ -341,22 +378,22 @@ if st.session_state['model_tq']:
         st.markdown("<h4 style='color:#e5e7eb; margin-bottom:15px;'>현장 실시간 공정 조건 입력 패널</h4>", unsafe_allow_html=True)
         st.info("현재 현장 설비에 셋팅된 공정 변수값을 슬라이더로 조절한 후, 아래 [현장 입력 조건 기반 품질 예측 연산 실행] 버튼을 눌러 계산하세요.")
         
-        cb = st.session_state['global_bounds']
+        sim_cb = st.session_state['data_bounds']
         
         sim_col1, sim_col2 = st.columns([1, 1], gap="large")
         with sim_col1:
             sim_cd = st.slider(
                 "현장 코킹 거리 입력 (Caulking_Distance, mm)",
-                min_value=float(round(cb['Caulking_Distance'][0], 2)),
-                max_value=float(round(cb['Caulking_Distance'][1], 2)),
-                value=float(round((cb['Caulking_Distance'][0] + cb['Caulking_Distance'][1])/2, 2)),
+                min_value=float(round(sim_cb['Caulking_Distance'][0], 2)),
+                max_value=float(round(sim_cb['Caulking_Distance'][1], 2)),
+                value=float(round((sim_cb['Caulking_Distance'][0] + sim_cb['Caulking_Distance'][1])/2, 2)),
                 step=0.01
             )
             sim_sc = st.slider(
                 "현장 스터드 센터 입력 (Stud_Center, mm)",
-                min_value=float(round(cb['Stud_Center'][0], 2)),
-                max_value=float(round(cb['Stud_Center'][1], 2)),
-                value=float(round((cb['Stud_Center'][0] + cb['Stud_Center'][1])/2, 2)),
+                min_value=float(round(sim_cb['Stud_Center'][0], 2)),
+                max_value=float(round(sim_cb['Stud_Center'][1], 2)),
+                value=float(round((sim_cb['Stud_Center'][0] + sim_cb['Stud_Center'][1])/2, 2)),
                 step=0.01
             )
         
@@ -425,5 +462,4 @@ if st.session_state['model_tq']:
         st.markdown("#### 원천 학습 데이터 통합 로그")
         st.dataframe(st.session_state['df_caulking'], use_container_width=True)
 else:
-    # [수정] 안내 문구 변경: 가동 버튼 -> 실행 버튼
     st.info("활성화를 위해 왼쪽 사이드바 패널에서 'JOINT-INPUT' 원천 데이터 파일을 로드한 후 실행 버튼을 클릭하십시오.")
