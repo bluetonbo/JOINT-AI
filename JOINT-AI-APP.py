@@ -13,7 +13,7 @@ st.set_page_config(
     page_icon="⚡"
 )
 
-# 2. 미니멀 엔지니어링 콘솔 스타일 CSS
+# 2. 미니멀 엔지니어링 콘솔 스타일 CSS (사각형 박스 슬림 최적화 반영)
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
@@ -36,25 +36,29 @@ st.markdown("""
         letter-spacing: -0.01em;
     }
     
+    /* 대 타이틀 및 레이블 사각형 상자를 글자 크기에 맞춰 슬림하게 축소 */
     .glass-card {
         background: #131b2e;
         border: 1px solid #223154;
-        border-radius: 8px;
-        padding: 22px;
-        margin-bottom: 20px;
+        border-radius: 6px;
+        padding: 12px 16px; /* 위아래 패딩을 대폭 줄여 글자에 박스를 밀착 */
+        margin-bottom: 12px; /* 컴포넌트 간 간격 최적화 */
     }
+    
+    /* 박스 내부 타이틀 텍스트 여백 제거 */
     .glass-card-title {
         color: #38bdf8;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 15px;
+        letter-spacing: 0.04em;
+        margin-bottom: 0px; /* 내부 공백을 제로화하여 박스가 비대해지는 것 방지 */
+        padding: 2px 0;
     }
 
     .stButton>button, .stDownloadButton>button {
-        height: 3rem !important;
-        font-size: 0.95rem !important;
+        height: 2.8rem !important;
+        font-size: 0.9rem !important;
         border-radius: 4px !important;
         background: #10b981 !important;
         color: #ffffff !important;
@@ -77,18 +81,18 @@ st.markdown("""
     .stNumberInput label, .stSlider label {
         color: #94a3b8 !important;
         font-weight: 500 !important;
-        font-size: 0.85rem !important;
+        font-size: 0.82rem !important;
         margin-bottom: 2px !important;
     }
     
     button[data-baseweb="tab"] {
-        font-size: 0.95rem !important;
+        font-size: 0.9rem !important;
         font-weight: 600 !important;
-        height: 3.2rem !important;
+        height: 2.8rem !important;
         color: #64748b !important;
         background-color: transparent !important;
         border: none !important;
-        padding: 0 20px !important;
+        padding: 0 16px !important;
     }
     button[data-baseweb="tab"][aria-selected="true"] {
         color: #38bdf8 !important;
@@ -99,6 +103,7 @@ st.markdown("""
         background-color: #141f36 !important;
         border: 1px solid #1e293b !important;
         color: #cbd5e1 !important;
+        padding: 10px 14px !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -140,7 +145,6 @@ if 'model_tq' not in st.session_state:
         },
         'optimizer_status': "STANDBY",
         
-        # 동적 제어를 위한 상태 변수
         'm_cd_min': 4.0, 'm_cd_max': 7.0, 'm_sc_min': 1.5, 'm_sc_max': 3.5,
         't_tq_min': 35.0, 't_tq_max': 37.0, 't_ed_min': 125000, 't_ed_max': 126000,
         'sim_cd': 5.5, 'sim_sc': 2.5,
@@ -242,7 +246,6 @@ if st.session_state['model_tq']:
                     'Stud_Center': db['Stud_Center']
                 }
             else:
-                # 콜백 동기화 구조 적용 - 수치 타이핑 & 마우스 드래그 슬라이더 병합
                 st.markdown("<span style='font-size:0.85rem; font-weight:500; color:#cbd5e1;'>Manual Caulking Distance Boundary (mm)</span>", unsafe_allow_html=True)
                 cd_s_col, cd_n1, cd_n2 = st.columns([2, 1, 1])
                 with cd_n1:
@@ -274,7 +277,6 @@ if st.session_state['model_tq']:
                     <div class='glass-card-title'>Target Quality KPIs Range</div>
             """, unsafe_allow_html=True)
             
-            # 품질 타겟 팩터 동기화 표현 레이어
             st.markdown("<span style='font-size:0.85rem; font-weight:500; color:#cbd5e1;'>Target Torque Metric (Nm)</span>", unsafe_allow_html=True)
             tq_s_col, tq_n1, tq_n2 = st.columns([2, 1, 1])
             with tq_n1:
@@ -427,7 +429,6 @@ if st.session_state['model_tq']:
             
             sim_cb = st.session_state['data_bounds']
             
-            # What-if 시뮬레이터 커서 이동 + 직접 수치 타이핑 복합 구조
             st.markdown("<span style='font-size:0.85rem; font-weight:500; color:#cbd5e1;'>Live Field Caulking Distance (mm)</span>", unsafe_allow_html=True)
             scd_col1, scd_col2 = st.columns([2, 1])
             with scd_col2:
