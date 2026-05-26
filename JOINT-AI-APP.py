@@ -165,8 +165,8 @@ with st.sidebar:
                 'model_tq': model_tq, 'model_ed': model_ed, 'scaler': scaler, 'df_caulking': df_comb,
                 'optimizer_status': "Engine Ready",
                 'global_bounds': {
-                    'Caulking_Distance': (float(df_comb['Caulking_Distance'].min() * 0.9), float(df_comb['Caulking_Distance'].max() * 1.1)),
-                    'Stud_Center': (float(df_comb['Stud_Center'].min() * 0.9), float(df_comb['Stud_Center'].max() * 1.1)),
+                    'Caulking_Distance': (float(df_comb['Caulking_Distance'].min()), float(df_comb['Caulking_Distance'].max())),
+                    'Stud_Center': (float(df_comb['Stud_Center'].min()), float(df_comb['Stud_Center'].max())),
                     'Aging_Status': (0, 1)
                 }
             })
@@ -184,8 +184,9 @@ if st.session_state['model_tq']:
     with m2: st.metric("HISTORICAL DATA LOGS", f"{len(st.session_state['df_caulking'])} Rows")
     with m3: st.metric("FINDER SYSTEM STATUS", st.session_state['optimizer_status'])
 
-    tab1, tab2 = st.tabs(["품질 타겟 추적 솔루션", "코킹 공정 원천 로그"])
+    tab1, tab2, tab3 = st.tabs(["품질 타겟 추적 솔루션", "현장 변수 실시간 시뮬레이터", "코킹 공정 원천 로그"])
 
+    # ------------------ TAB 1: 품질 타겟 추적 솔루션 (기존 기능 좌우반전 레이아웃) ------------------
     with tab1:
         col1, col2 = st.columns([1, 1], gap="large")
         
@@ -216,14 +217,12 @@ if st.session_state['model_tq']:
 
         st.markdown("<br><hr style='border: 0.5px solid #1f2937;'><br>", unsafe_allow_html=True)
         
-        # 역산 실행 프로세스 부
         if st.button("품질 만족 공정 변수(CD, SC, AG) 역산 추적 실행", type="primary", use_container_width=True):
             X_vars = st.session_state['process_vars']
             
             def target_loss_function(x_input):
                 df_query = pd.DataFrame([x_input], columns=X_vars)
                 scaled_query = st.session_state['scaler'].transform(df_query)
-                
                 pred_tq = st.session_state['model_tq'].predict(scaled_query)[0]
                 pred_ed = st.session_state['model_ed'].predict(scaled_query)[0]
                 
@@ -284,66 +283,96 @@ if st.session_state['model_tq']:
                 
                 st.session_state['confidence_score'] = round((tq_conf + ed_conf) / 2.0, 1)
                 st.session_state['optimizer_status'] = "Optimization Success" if st.session_state['confidence_score'] >= 80.0 else "Approximated"
-            
             st.rerun()
 
-        # 결과 리포트 대시보드 출력부
         if st.session_state['opt_result_x'] is not None:
             opt_x = st.session_state['opt_result_x']
             aging_text = "Aged (에이징 적용)" if round(opt_x[2]) == 1 else "Unaged (미적용)"
             
-            # 상단 영역: [수정] 표 형태를 제거하고 예상 토크값과 동일한 3열 카드 모양으로 교체
             st.markdown("<h3 style='color:#ffffff; margin-top: 25px;'>AI 분석 기반 권장 공정 사양</h3>", unsafe_allow_html=True)
             c_col1, c_col2, c_col3 = st.columns(3)
             with c_col1:
-                st.markdown(f"""
-                    <div style='border-radius: 6px; border-left: 6px solid #10b981; padding: 20px; background: #1f2937;'>
-                        <span style='color: #9ca3af; font-size: 0.9rem; font-weight:600;'>추천 코킹 거리 (Caulking_Distance)</span>
-                        <h2 style='color: #ffffff; font-size: 2.5rem; margin: 5px 0; font-family: JetBrains Mono;'>{opt_x[0]:.2f} <span style='font-size:1.2rem; color:#10b981;'>mm</span></h2>
-                    </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"<div style='border-radius: 6px; border-left: 6px solid #10b981; padding: 20px; background: #1f2937;'><span style='color: #9ca3af; font-size: 0.9rem; font-weight:600;'>추천 코킹 거리 (Caulking_Distance)</span><h2 style='color: #ffffff; font-size: 2.5rem; margin: 5px 0; font-family: JetBrains Mono;'>{opt_x[0]:.2f} <span style='font-size:1.2rem; color:#10b981;'>mm</span></h2></div>", unsafe_allow_html=True)
             with c_col2:
-                st.markdown(f"""
-                    <div style='border-radius: 6px; border-left: 6px solid #10b981; padding: 20px; background: #1f2937;'>
-                        <span style='color: #9ca3af; font-size: 0.9rem; font-weight:600;'>추천 스터드 센터 (Stud_Center)</span>
-                        <h2 style='color: #ffffff; font-size: 2.5rem; margin: 5px 0; font-family: JetBrains Mono;'>{opt_x[1]:.2f} <span style='font-size:1.2rem; color:#10b981;'>mm</span></h2>
-                    </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"<div style='border-radius: 6px; border-left: 6px solid #10b981; padding: 20px; background: #1f2937;'><span style='color: #9ca3af; font-size: 0.9rem; font-weight:600;'>추천 스터드 센터 (Stud_Center)</span><h2 style='color: #ffffff; font-size: 2.5rem; margin: 5px 0; font-family: JetBrains Mono;'>{opt_x[1]:.2f} <span style='font-size:1.2rem; color:#10b981;'>mm</span></h2></div>", unsafe_allow_html=True)
             with c_col3:
-                st.markdown(f"""
-                    <div style='border-radius: 6px; border-left: 6px solid #10b981; padding: 20px; background: #1f2937;'>
-                        <span style='color: #9ca3af; font-size: 0.9rem; font-weight:600;'>추천 에이징 여부 (Aging_Status)</span>
-                        <h2 style='color: #ffffff; font-size: 1.8rem; margin: 12px 0; font-family: Inter; font-weight:700;'>{aging_text}</h2>
-                    </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"<div style='border-radius: 6px; border-left: 6px solid #10b981; padding: 20px; background: #1f2937;'><span style='color: #9ca3af; font-size: 0.9rem; font-weight:600;'>추천 에이징 여부 (Aging_Status)</span><h2 style='color: #ffffff; font-size: 1.8rem; margin: 12px 0; font-family: Inter; font-weight:700;'>{aging_text}</h2></div>", unsafe_allow_html=True)
             
-            # 하단 영역: 품질 변수 만족 스펙 및 신뢰도 모니터링 카드 (3열 배치)
             st.markdown("<h3 style='color:#ffffff; margin-top: 25px;'>해당 조건 세팅 시 예상 품질 인자 및 신뢰도</h3>", unsafe_allow_html=True)
             r_col1, r_col2, r_col3 = st.columns(3)
             with r_col1:
-                st.markdown(f"""
-                    <div style='border-radius: 6px; border-left: 6px solid #3b82f6; padding: 20px; background: #1f2937;'>
-                        <span style='color: #9ca3af; font-size: 0.9rem; font-weight:600;'>해당 조건 세팅 시 예상 토크 값</span>
-                        <h2 style='color: #ffffff; font-size: 2.5rem; margin: 5px 0; font-family: JetBrains Mono;'>{st.session_state['opt_pred_tq']:.2f} <span style='font-size:1.2rem; color:#3b82f6;'>Nm</span></h2>
-                    </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"<div style='border-radius: 6px; border-left: 6px solid #3b82f6; padding: 20px; background: #1f2937;'><span style='color: #9ca3af; font-size: 0.9rem; font-weight:600;'>해당 조건 세팅 시 예상 토크 값</span><h2 style='color: #ffffff; font-size: 2.5rem; margin: 5px 0; font-family: JetBrains Mono;'>{st.session_state['opt_pred_tq']:.2f} <span style='font-size:1.2rem; color:#3b82f6;'>Nm</span></h2></div>", unsafe_allow_html=True)
             with r_col2:
-                st.markdown(f"""
-                    <div style='border-radius: 6px; border-left: 6px solid #3b82f6; padding: 20px; background: #1f2937;'>
-                        <span style='color: #9ca3af; font-size: 0.9rem; font-weight:600;'>해당 조건 세팅 시 예상 내구 수명</span>
-                        <h2 style='color: #ffffff; font-size: 2.5rem; margin: 5px 0; font-family: JetBrains Mono;'>{st.session_state['opt_pred_ed']:,.0f} <span style='font-size:1.2rem; color:#3b82f6;'>Cycles</span></h2>
-                    </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"<div style='border-radius: 6px; border-left: 6px solid #3b82f6; padding: 20px; background: #1f2937;'><span style='color: #9ca3af; font-size: 0.9rem; font-weight:600;'>해당 조건 세팅 시 예상 내구 수명</span><h2 style='color: #ffffff; font-size: 2.5rem; margin: 5px 0; font-family: JetBrains Mono;'>{st.session_state['opt_pred_ed']:,.0f} <span style='font-size:1.2rem; color:#3b82f6;'>Cycles</span></h2></div>", unsafe_allow_html=True)
             with r_col3:
                 conf_color = "#10b981" if st.session_state['confidence_score'] >= 80.0 else "#ef4444"
-                st.markdown(f"""
-                    <div style='border-radius: 6px; border-left: 6px solid {conf_color}; padding: 20px; background: #1f2937;'>
-                        <span style='color: #9ca3af; font-size: 0.9rem; font-weight:600;'>품질 조건 만족 범위 신뢰도</span>
-                        <h2 style='color: #ffffff; font-size: 2.5rem; margin: 5px 0; font-family: JetBrains Mono;'>{st.session_state['confidence_score']:.1f} <span style='font-size:1.2rem; color:{conf_color};'>%</span></h2>
-                    </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"<div style='border-radius: 6px; border-left: 6px solid {conf_color}; padding: 20px; background: #1f2937;'><span style='color: #9ca3af; font-size: 0.9rem; font-weight:600;'>품질 조건 만족 범위 신뢰도</span><h2 style='color: #ffffff; font-size: 2.5rem; margin: 5px 0; font-family: JetBrains Mono;'>{st.session_state['confidence_score']:.1f} <span style='font-size:1.2rem; color:{conf_color};'>%</span></h2></div>", unsafe_allow_html=True)
 
+    # ------------------ TAB 2: [신규 추가] 현장 변수 실시간 시뮬레이터 (What-If Analysis) ------------------
     with tab2:
+        st.markdown("<h4 style='color:#e5e7eb; margin-bottom:15px;'>현장 실시간 공정 조건 입력 패널</h4>", unsafe_allow_html=True)
+        st.info("현재 현장 설비에 셋팅된 공정 변수값을 슬라이더로 변경해 보세요. 학습된 AI 모델이 토크와 내구성을 즉시 실시간 계산합니다.")
+        
+        cb = st.session_state['global_bounds']
+        
+        sim_col1, sim_col2 = st.columns([1, 1], gap="large")
+        with sim_col1:
+            # 1. 코킹 거리 제어 컴포넌트
+            sim_cd = st.slider(
+                "현장 코킹 거리 입력 (Caulking_Distance, mm)",
+                min_value=float(round(cb['Caulking_Distance'][0], 2)),
+                max_value=float(round(cb['Caulking_Distance'][1], 2)),
+                value=float(round((cb['Caulking_Distance'][0] + cb['Caulking_Distance'][1])/2, 2)),
+                step=0.01
+            )
+            # 2. 스터드 센터 제어 컴포넌트
+            sim_sc = st.slider(
+                "현장 스터드 센터 입력 (Stud_Center, mm)",
+                min_value=float(round(cb['Stud_Center'][0], 2)),
+                max_value=float(round(cb['Stud_Center'][1], 2)),
+                value=float(round((cb['Stud_Center'][0] + cb['Stud_Center'][1])/2, 2)),
+                step=0.01
+            )
+        
+        with sim_col2:
+            # 3. 에이징 상태 제어 라디오 컴포넌트
+            sim_ag_label = st.radio(
+                "현장 에이징 처리 상태 여부 선택 (Aging_Status)",
+                options=["Unaged (미적용 - 0)", "Aged (에이징 적용 - 1)"],
+                index=0
+            )
+            sim_ag = 1 if "Aged (에이징 적용" in sim_ag_label else 0
+            
+            st.markdown("<div style='margin-top: 25px; padding: 15px; background-color: #111827; border-radius: 6px; border: 1px solid #1f2937;'><span style='color:#10b981; font-weight:700;'>AI 연동 연산 방식:</span><br>업로드된 마스터 데이터의 독립인자 구조를 정규화(MinMax Scaling)한 후, 기 구축된 독립 가중치 계수를 다중 선형 회귀식에 대입하여 0.01초 내에 실시간 예측 연산을 완수합니다.</div>", unsafe_allow_html=True)
+
+        # 수동 변경 즉시 AI 예측 수행 (따로 버튼을 안 눌러도 슬라이더 변경 즉시 반영됨)
+        X_vars = st.session_state['process_vars']
+        df_sim_query = pd.DataFrame([[sim_cd, sim_sc, sim_ag]], columns=X_vars)
+        scaled_sim_query = st.session_state['scaler'].transform(df_sim_query)
+        
+        sim_pred_tq = st.session_state['model_tq'].predict(scaled_sim_query)[0]
+        sim_pred_ed = st.session_state['model_ed'].predict(scaled_sim_query)[0]
+        
+        # 실시간 예측 데이터 모니터링 카드 시각화
+        st.markdown("<h3 style='color:#ffffff; margin-top: 30px;'>입력된 조건에 대한 AI 실시간 품질 예측 결과</h3>", unsafe_allow_html=True)
+        s_res1, s_res2 = st.columns(2)
+        with s_res1:
+            st.markdown(f"""
+                <div style='border-radius: 6px; border-left: 6px solid #3b82f6; padding: 25px; background: #1f2937;'>
+                    <span style='color: #9ca3af; font-size: 0.95rem; font-weight:600;'>AI 예측 토크 출력값</span>
+                    <h2 style='color: #ffffff; font-size: 3rem; margin: 5px 0; font-family: JetBrains Mono;'>{sim_pred_tq:.2f} <span style='font-size:1.4rem; color:#3b82f6;'>Nm</span></h2>
+                </div>
+            """, unsafe_allow_html=True)
+        with s_res2:
+            st.markdown(f"""
+                <div style='border-radius: 6px; border-left: 6px solid #3b82f6; padding: 25px; background: #1f2937;'>
+                    <span style='color: #9ca3af; font-size: 0.95rem; font-weight:600;'>AI 예측 내구 수명 출력값</span>
+                    <h2 style='color: #ffffff; font-size: 3rem; margin: 5px 0; font-family: JetBrains Mono;'>{sim_pred_ed:,.0f} <span style='font-size:1.4rem; color:#3b82f6;'>Cycles</span></h2>
+                </div>
+            """, unsafe_allow_html=True)
+
+    # ------------------ TAB 3: 코킹 공정 원천 로그 ------------------
+    with tab3:
         st.markdown("#### 원천 학습 데이터 통합 로그")
         st.dataframe(st.session_state['df_caulking'], use_container_width=True)
 else:
